@@ -10,6 +10,9 @@
 //                                                     -> out/<name>/<name>.mp4 (+ -muted.mp4, .webm, -poster.jpg,
 //                                                        -cover-300.png: frame 0 at thumbnail size, with its text checked)
 //
+// --size 1080x1920 on stills, measure, check or render draws the same film at another size (film.json size
+// by default), so each format of one timeline renders from one folder, in parallel under its own name.
+//
 // render: headless Chrome steps window.render(t) frame by frame and pipes PNGs into
 // ffmpeg. --blur renders 4 subframes per frame and averages them (motion blur, 4x slower).
 // Colors: screenshots are sRGB; ffmpeg converts once to BT.709 limited range and tags it,
@@ -29,7 +32,7 @@ for (let i = 0; i < rest.length; i++) {
 }
 const root = process.cwd()
 const film = JSON.parse(readFileSync(join(root, 'film.json'), 'utf8'))
-const [W, H] = film.size ?? [1920, 1080]
+const [W, H] = flags.size?.split('x').map(Number) ?? film.size ?? [1920, 1080]
 const FPS = film.fps ?? 60
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf', '.otf': 'font/otf', '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.mp4': 'video/mp4' }
@@ -135,7 +138,7 @@ if (cmd === 'serve') {
   console.log(`http://127.0.0.1:${server.address().port}/#play   (one frame: /#t=12.4)`)
 } else if (['stills', 'measure', 'check', 'render'].includes(cmd)) {
   const server = await serve()
-  const url = `http://127.0.0.1:${server.address().port}/`
+  const url = `http://127.0.0.1:${server.address().port}/?size=${W}x${H}` // the page draws at the viewport's size
   const browser = await launch()
   try {
     if (cmd === 'stills') {

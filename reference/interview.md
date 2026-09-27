@@ -13,7 +13,7 @@ The user decides what the film shows, how it sounds, and how it is built. Ask af
 | How should it be built? **(the engine gate)** | HTML `render(t)` (Recommended): one file, no license, UI redrawn faithfully / Remotion: imports the product's real React components, needs a Remotion company license above a small team size |
 
 - Ask the engine question only when the product's UI is React. Otherwise use HTML and say so in one line. Recommend Remotion only when reusing real components clearly beats redrawing them (many complex screens, a design system that changes often, a team that will keep editing films), and name the license cost.
-- Add the format (16:9, 9:16, 1:1, 4:5) if social is in play.
+- Add the formats (16:9, 9:16, 1:1, 4:5) if social is in play. Several can come from one film, each reframed (engine-html.md "Several formats").
 - Ask for a film whose feel they want, as a file you can open (a video, a frame, a folder of stills). None is a fine answer: you will name one (story.md).
 
 ## Round 2: sound

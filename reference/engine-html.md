@@ -28,7 +28,7 @@ No Google Chrome? Set `CHROME_PATH` to any Chromium binary. ffmpeg comes from PA
 - Build the whole DOM once in HTML. `render` only changes styles and text (use `set(el, {x, y, s, r, op, blur, vis})`). Show and hide with `vis` or `op`; never add or remove nodes.
 - **Schedule by landing, not by start.** Anything that builds up to a moment (flips, typing, counters, springs, a riser) is timed backwards from when it lands: `start = landing - duration`. Key the landing to the word or beat; the start follows.
 - **Gate every layer to its scene.** A layer outside its scene is hidden with `vis`, not only faded, or its empty shapes show through other scenes.
-- **Camera:** keys are `[t, x, y, zoom, spring]` with `snap`, `whip` or `creep` per key (kit.js). Every hold on text uses `fit(textBox(el, world), {w, h})` so a line is never cropped, passed through `inside(hold, contentBounds, {w, h})` so a line near the content's edge doesn't pull empty space into the frame. Add `shake(t, peak)` on impacts and `beatKick(t, grid, from, to)` so holds breathe.
+- **Camera:** keys are `[t, x, y, zoom, spring]` with `snap`, `whip` or `creep` per key (kit.js). Every hold on text uses `fit(textBox(el, world))` so a line is never cropped, passed through `inside(hold, contentBounds)` so a line near the content's edge doesn't pull empty space into the frame. Add `shake(t, peak)` on impacts and `beatKick(t, grid, from, to)` so holds breathe.
 - Every time comes from `film.json` cues, the beat grid (`at(grid, bar, beat)`) or a voice word (`wordAt(film, 'v2', 'SAP')`). There are no literal times in scene code apart from small offsets inside a moment.
 - Text that grows (typing, counters) keeps its box: fixed widths, `font-variant-numeric: tabular-nums`, typed text drawn inside a full-width slot.
 - Hex colors for anything that animates. Individual transforms. No `will-change` on anything a camera scales.
@@ -72,6 +72,13 @@ node film.mjs measure 9.4                              # boxes of every [data-ta
 
 - Put `data-target="name"` on anything a cursor clicks or a traveller lands on, and measure both ends of every move. Console output and errors surface in the terminal.
 - Browser preview: `/#play` plays the film with `audio/mix.wav` (click to restart), and `/#t=12.4` holds one frame.
+
+## Several formats from one film
+
+`film.json` `size` is the main format. `--size 1080x1920` on `stills`, `measure`, `check` and `render` draws the same film at another size, and `/?size=1080x1920#play` previews it. `boot()` sizes the stage (`--w` and `--h` in CSS) and the camera helpers to it, and `render` sees it as `film.size`.
+- Lay scenes out from the size, never from fixed pixels: CSS sizes in `cqw` and `cqh` (the stage is a size container), and a small `layout(film)` for positions that differ by format.
+- Reframe each format instead of cropping one out of another: a 9:16 stacks what a 16:9 puts side by side.
+- Check each format at its holds and its cover (`check ... --size 1080x1920`), then render the formats in parallel under their own names: `node film.mjs render launch-9x16 --size 1080x1920 --blur`.
 
 ## Render
 

@@ -71,6 +71,9 @@ export function swapIn(t, from, to = Infinity, delay = 0.18, out = 0.1) {
 }
 
 // ---------- camera ----------
+// The frame the camera films: film.size (or a --size override), set by boot(). fit(), inside() and
+// worldTransform() default to it, so one film renders every format.
+let W = 1920, H = 1080
 /** Camera keys [t, x, y, zoom, spring?] in world units; zoom springs in log space. Each key can
  *  carry its own spring (snap, whip, creep) so a move's character matches its moment. */
 export function camera(t, keys, config = heavy) {
@@ -84,13 +87,13 @@ export function camera(t, keys, config = heavy) {
  *  px clear of every edge on a w x h frame, zoomed in no further than `cap`. Use it for every hold
  *  on text being read: framing from the text's box never crops a line. Spread into a key:
  *  [t, ...fit(box), whip]. */
-export const fit = (box, { w = 1920, h = 1080, margin = 70, cap = 3 } = {}) =>
+export const fit = (box, { w = W, h = H, margin = 70, cap = 3 } = {}) =>
   [box.x + box.w / 2, box.y + box.h / 2, Math.min(cap, (w - 2 * margin) / box.w, (h - 2 * margin) / box.h)]
 /** Keep a hold [x, y, zoom] on the content: on each axis, center on `bounds` when the frame is
  *  larger than it, otherwise slide the frame only as far as the bounds' edge. A hold from fit() on
  *  a box inside `bounds` still shows the whole box, but a line near the bottom of the content no
  *  longer drags empty space into the frame. Spread into a key: [t, ...inside(fit(box), bounds), whip]. */
-export function inside([x, y, zoom], bounds, { w = 1920, h = 1080 } = {}) {
+export function inside([x, y, zoom], bounds, { w = W, h = H } = {}) {
   const axis = (v, lo, size, frame) => {
     const half = frame / 2 / zoom
     return size <= 2 * half ? lo + size / 2 : Math.min(lo + size - half, Math.max(lo + half, v))
@@ -123,7 +126,7 @@ export function beatKick(t, grid, from, to, { amount = 0.012, decay = 9 } = {}) 
   return 1 + amount * Math.exp(-decay * since)
 }
 /** CSS transform for a world layer (transform-origin 0 0). Never put will-change on it. */
-export const worldTransform = (view, w = 1920, h = 1080) =>
+export const worldTransform = (view, w = W, h = H) =>
   `translate(${w / 2}px,${h / 2}px) scale(${view.zoom}) translate(${-view.x}px,${-view.y}px)`
 
 // ---------- cursor ----------
@@ -230,6 +233,10 @@ export function set(el, o) {
  */
 export async function boot(render, { wait = [] } = {}) {
   const film = await (await fetch('film.json', { cache: 'no-store' })).json()
+  // film.mjs passes its size (--size 1080x1920, or film.json's); in the browser, /?size=1080x1920#play
+  ;[W, H] = film.size = new URLSearchParams(location.search).get('size')?.split('x').map(Number) ?? film.size ?? [W, H]
+  document.documentElement.style.setProperty('--w', `${W}px`)
+  document.documentElement.style.setProperty('--h', `${H}px`)
   for (const line of film.voice?.lines ?? []) {
     const r = await fetch(`audio/vo/${line.id}.json`, { cache: 'no-store' })
     if (r.ok) line.words = (await r.json()).words

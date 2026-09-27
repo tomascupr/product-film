@@ -1,7 +1,8 @@
 import { track, type SpringConfig } from "./spring";
 
-/** The frame the camera films. Change for 9:16 or other sizes. */
-export const FRAME = { width: 1920, height: 1080 } as const;
+/** The frame the camera films. Pass `useVideoConfig()`: several compositions (one per format) share a
+ *  bundle, so a global size would frame every format but one wrong. */
+type Frame = { width: number; height: number };
 
 /** Camera keys in world units: the world point at the frame's center, and the zoom. */
 export type CameraKey = readonly [time: number, x: number, y: number, zoom: number, spring?: SpringConfig];
@@ -25,19 +26,19 @@ export function camera(t: number, keys: readonly CameraKey[], config: SpringConf
 
 /** A hold [x, y, zoom] that shows the whole box (world units) `margin` px clear of every edge,
  *  zoomed no further than `cap`. Use it for every hold on text being read, so no line is cropped. */
-export function fit(box: { x: number; y: number; w: number; h: number }, { margin = 70, cap = 3 } = {}) {
+export function fit(box: { x: number; y: number; w: number; h: number }, frame: Frame, { margin = 70, cap = 3 } = {}) {
   return [box.x + box.w / 2, box.y + box.h / 2,
-    Math.min(cap, (FRAME.width - 2 * margin) / box.w, (FRAME.height - 2 * margin) / box.h)] as const;
+    Math.min(cap, (frame.width - 2 * margin) / box.w, (frame.height - 2 * margin) / box.h)] as const;
 }
 
 /** Keep a hold on the content: per axis, center on `bounds` when the frame is larger, else slide
  *  only as far as the bounds' edge. A fitted box inside `bounds` stays whole. */
-export function inside([x, y, zoom]: readonly [number, number, number], bounds: { x: number; y: number; w: number; h: number }) {
-  const axis = (v: number, lo: number, size: number, frame: number) => {
-    const half = frame / 2 / zoom;
+export function inside([x, y, zoom]: readonly [number, number, number], bounds: { x: number; y: number; w: number; h: number }, frame: Frame) {
+  const axis = (v: number, lo: number, size: number, extent: number) => {
+    const half = extent / 2 / zoom;
     return size <= 2 * half ? lo + size / 2 : Math.min(lo + size - half, Math.max(lo + half, v));
   };
-  return [axis(x, bounds.x, bounds.w, FRAME.width), axis(y, bounds.y, bounds.h, FRAME.height), zoom] as const;
+  return [axis(x, bounds.x, bounds.w, frame.width), axis(y, bounds.y, bounds.h, frame.height), zoom] as const;
 }
 
 /** Impact shake at `at`: an offset that decays to nothing in about 0.4 s. Add it to the camera. */
@@ -55,11 +56,11 @@ export function beatKick(t: number, grid: { bpm: number; firstBeat: number }, fr
 }
 
 /** Screen position of a world point. */
-export function project(view: Camera, x: number, y: number) {
-  return { x: FRAME.width / 2 + (x - view.x) * view.zoom, y: FRAME.height / 2 + (y - view.y) * view.zoom };
+export function project(view: Camera, x: number, y: number, frame: Frame) {
+  return { x: frame.width / 2 + (x - view.x) * view.zoom, y: frame.height / 2 + (y - view.y) * view.zoom };
 }
 
 /** CSS transform for a world layer (transform-origin 0 0). Never add will-change to it. */
-export function worldTransform(view: Camera) {
-  return `translate(${FRAME.width / 2}px, ${FRAME.height / 2}px) scale(${view.zoom}) translate(${-view.x}px, ${-view.y}px)`;
+export function worldTransform(view: Camera, frame: Frame) {
+  return `translate(${frame.width / 2}px, ${frame.height / 2}px) scale(${view.zoom}) translate(${-view.x}px, ${-view.y}px)`;
 }

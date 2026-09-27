@@ -29,6 +29,7 @@ pnpm add remotion@X @remotion/cli@X @remotion/bundler@X @remotion/renderer@X @re
 - **Providers:** components can need the app's context providers. `TruncatedText` threw "`Tooltip` must be used within `TooltipProvider`". Wrap the composition in the providers the imported components use (tooltip, theme, i18n), with static values.
 - **Server components and data fetching** do not run here. Import presentational leaf components and pass demo data as props.
 - **Composition.** `fps` comes from props through `calculateMetadata` (see `Root.tsx`): 60 in Studio and for stills, 240 for the final render.
+- **Several formats:** register one `<Composition>` per format (its own `id`, `width` and `height`) on the same component. The camera helpers take the frame from `useVideoConfig()`, so each format frames itself. Reframe the layout per format rather than cropping.
 
 ## Real product screens (tested: a process diagram, a workflow graph and a chat transcript)
 
@@ -69,7 +70,7 @@ Add per product: `tokens.ts` (the product's colors, fonts, springs, all as hex),
 
 ## Rules for scene code
 
-- Camera: keys are `[t, x, y, zoom, spring]` with `snap`, `whip` or `creep` per key (`kit/camera.ts`). Every hold on text uses `fit(box)` from the text's measured box (see Measuring), passed through `inside(hold, contentBounds)` so the frame stays on the content. Add `shake(t, peak)` on impacts and `beatKick(t, grid, from, to)` so holds breathe. Animated colors use Remotion's `interpolateColors` with hex tokens.
+- Camera: keys are `[t, x, y, zoom, spring]` with `snap`, `whip` or `creep` per key (`kit/camera.ts`). Every hold on text uses `fit(box, frame)` from the text's measured box (see Measuring), passed through `inside(hold, contentBounds, frame)` so the frame stays on the content, where `frame` is `useVideoConfig()`. Add `shake(t, peak)` on impacts and `beatKick(t, grid, from, to)` so holds breathe. Animated colors use Remotion's `interpolateColors` with hex tokens.
 
 - Read time once: `const t = useTime()`. Everything is a function of `t` and the cues. No hooks with state, no effects that change what is drawn. A `useLayoutEffect` that paints a canvas from `t` is fine.
 - Timeline in `cues.ts` from `film.json`, the beat grid (`b(bar, beat, fraction)`) and voice words (a `wordAt` like kit.js). Layout in `layout.ts`, with measured numbers commented as measured.

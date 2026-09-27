@@ -8,10 +8,12 @@
   /* Copy the product's fonts into fonts/ and uncomment:
   @font-face { font-family: Brand; src: url(fonts/brand.woff2) format('woff2'); font-display: block; } */
   html, body { margin: 0; background: var(--bg); overflow: hidden; }
-  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--fg); font-family: Brand, system-ui, sans-serif; }
+  /* The stage is the frame: boot() sets --w and --h from film.size. Size things in cqw and cqh
+     (1% of the frame's width or height) so the same film reframes for 9:16 or 1:1. */
+  #stage { position: relative; width: var(--w); height: var(--h); container-type: size; overflow: hidden; background: var(--bg); color: var(--fg); font-family: Brand, system-ui, sans-serif; }
   .layer { position: absolute; inset: 0; }
   /* Punchline: every word keeps its slot from the start, so the line never re-centers. */
-  .punch { display: flex; justify-content: center; align-items: center; gap: .28em; font-size: 140px; font-weight: 600; letter-spacing: -.02em; }
+  .punch { display: flex; justify-content: center; align-items: center; gap: .28em; font-size: 7.3cqw; font-weight: 600; letter-spacing: -.02em; }
   .punch span { display: inline-block; visibility: hidden; }
   .accent { color: var(--accent); }
 </style></head>
