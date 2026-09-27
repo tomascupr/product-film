@@ -1,0 +1,5 @@
+node_modules/
+out/
+kit.js
+film.mjs
+pnpm-lock.yaml

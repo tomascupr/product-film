@@ -183,6 +183,29 @@ const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16))
 /** A color between two hex tokens, for anything that animates color (CSS color-mix cannot tween). */
 export const mixHex = (a, b, p) => `rgb(${rgb(a).map((v, i) => Math.round(mix(v, rgb(b)[i], clamp01(p)))).join(',')})`
 
+// ---------- third-party animation, driven by t ----------
+/** A Lottie file (After Effects via Bodymovin, or LottieFiles) as a clip on the film's clock.
+ *  Pass the `lottie` global from lottie-web's build/player/lottie_svg.min.js. It seeks by frame, not
+ *  time: lottie-web's time argument is in milliseconds whatever its docs say, and frames leave no
+ *  doubt. Add `clip.ready` to boot's wait list so frame 0 is never drawn before the file loads.
+ *  clip.at(t, start, speed) shows the frame for film time t; before `start` it holds frame 0. */
+export function lottieClip(lottie, container, path) {
+  const anim = lottie.loadAnimation({ container, path, renderer: 'svg', loop: false, autoplay: false })
+  const ready = new Promise((ok, fail) => { anim.addEventListener('DOMLoaded', ok); anim.addEventListener('data_failed', () => fail(new Error(`lottie: could not load ${path}`))) })
+  return {
+    anim, ready,
+    at(t, start = 0, speed = 1) {
+      const last = anim.totalFrames - 1
+      anim.goToAndStop(Math.min(last, Math.max(0, (t - start) * speed * anim.frameRate)), true)
+    },
+  }
+}
+/** A GSAP timeline on the film's clock. Build it once, paused (gsap.timeline({ paused: true })), then
+ *  call this from render(t). seek() sets every tweened value for that moment and fires no callbacks,
+ *  so a frame drawn cold matches one drawn in sequence. Loose gsap.to() tweens run on GSAP's own
+ *  ticker: put every tween on a paused timeline. */
+export const gsapAt = (timeline, t, start = 0) => timeline.seek(Math.max(0, t - start), true)
+
 // ---------- DOM ----------
 export const $ = id => document.getElementById(id)
 /** Set transform, opacity, blur and visibility on an element (or id) in one call. */
@@ -205,7 +228,7 @@ export function set(el, o) {
  *   #play       live preview with audio/mix.wav if it exists
  *   #t=12.4     hold one frame
  */
-export async function boot(render) {
+export async function boot(render, { wait = [] } = {}) {
   const film = await (await fetch('film.json', { cache: 'no-store' })).json()
   for (const line of film.voice?.lines ?? []) {
     const r = await fetch(`audio/vo/${line.id}.json`, { cache: 'no-store' })
@@ -214,7 +237,8 @@ export async function boot(render) {
   const draw = t => render(t, film)
   window.film = film
   window.render = draw
-  window.ready = Promise.all([document.fonts.ready, ...[...document.images].map(i => i.decode().catch(() => {}))])
+  // `wait`: anything else frame 0 depends on, such as lottieClip(...).ready
+  window.ready = Promise.all([document.fonts.ready, ...[...document.images].map(i => i.decode().catch(() => {})), ...wait])
   await window.ready
   const hold = location.hash.match(/^#t=([\d.]+)/)
   if (location.hash === '#play') {

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>third-party fixture</title><link rel="icon" href="data:,">
+<style>html, body { margin: 0; background: #22222c; } #stage { position: relative; width: 500px; height: 400px; overflow: hidden; }
+#lottie { position: absolute; left: 0; top: 0; width: 500px; height: 200px; } svg.line { position: absolute; left: 0; top: 200px; }
+#word { position: absolute; left: 40px; top: 320px; font: 600 40px sans-serif; color: #fafaf2; }</style>
+<script src="node_modules/lottie-web/build/player/lottie_svg.min.js"></script></head>
+<body><div id="stage">
+  <div id="lottie"></div>
+  <svg class="line" width="500" height="120"><path id="path" d="M20 100 C 150 0, 350 120, 480 20" stroke="#ffdd04" stroke-width="6" fill="none"/></svg>
+  <div id="word">Frame exact</div>
+</div>
+<script type="module">
+import { boot, lottieClip, gsapAt } from './kit.js'
+import { gsap } from './node_modules/gsap/index.js'
+import { DrawSVGPlugin } from './node_modules/gsap/DrawSVGPlugin.js'
+gsap.registerPlugin(DrawSVGPlugin)
+const clip = lottieClip(window.lottie, document.getElementById('lottie'), 'box.json')
+const tl = gsap.timeline({ paused: true })
+  .fromTo('#path', { drawSVG: '0%' }, { drawSVG: '100%', duration: 1.2, ease: 'power2.inOut' })
+  .from('#word', { y: 40, opacity: 0, duration: 0.5, ease: 'back.out(2)' }, 0.6)
+boot(t => { clip.at(t, 0.1); gsapAt(tl, t, 0.2) }, { wait: [clip.ready] })
+</script></body></html>
