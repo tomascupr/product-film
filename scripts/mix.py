@@ -134,7 +134,9 @@ def main():
     note = f", limiter catches {over:.1f} dB of peaks" if over > 0 else ""
     if over > 3:
         hot = ", ".join(f"{name} {p:+.1f} dBFS" for p, name in sorted(peaks, reverse=True)[:3])
-        note += f" (WARNING: lower the loudest sources instead; hottest at mix gain: {hot})"
+        at = int(np.argmax(np.abs(bus).max(axis=1))) / SR
+        note += (f" (WARNING: the mix peaks at {at:.2f} s, where sources stack; lower what plays there,"
+                 f" or accept it if that is the film's intended loudest hit. Hottest single sources: {hot})")
     print(f"{args.out}: {film['duration']:.2f} s, {measured['input_i']} LUFS {lift:+.1f} dB -> {args.lufs} LUFS{note}")
 
 

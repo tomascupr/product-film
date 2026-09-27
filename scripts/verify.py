@@ -85,7 +85,9 @@ def lost_words(path, film_json):
     import eleven  # noqa: E402  (stdlib only; same folder)
     words = lambda text: [w for w in re.findall(r"[a-z']+", text.lower().replace("’", "'")) if w not in NUMBERS]
     lines = json.load(open(film_json)).get("voice", {}).get("lines", [])
-    heard = set(words(" ".join(w["text"] for w in eleven.listen(path, quiet=True))))
+    said = words(" ".join(w["text"] for w in eleven.listen(path, quiet=True)))
+    # a compound can come back split ("liftoff" as "lift off"), so adjacent pairs count as heard too
+    heard = set(said) | {a + b for a, b in zip(said, said[1:])}
     return [w for w in words(" ".join(l["text"] for l in lines)) if w not in heard]
 
 

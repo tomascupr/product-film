@@ -66,7 +66,7 @@ python3 $S/eleven.py sfx --text "soft UI click, dry, close" --seconds 0.5 --out 
 ```
 
 Sound design carries as much of the energy as the picture. Layer it like a trailer, not a UI demo:
-- **Into the peak:** a riser that ends exactly on it, and a beat of near-silence just before (a pre-hit stop).
+- **Into the peak:** a riser that ends just before it, then a beat of near-silence (a pre-hit stop) that nothing else plays through: end the riser before the hush and check `audio/bed.wav` there. A hush filled by a riser's tail makes the peak no louder than what came before, and `energy.py` will not find it.
 - **On the peak and the final hit:** an impact with sub bass, stacked with the moment's own sound (a clack, a stamp, a click).
 - **On every camera move:** a whoosh sized to the move (an airy whip for a pan, a heavy one for a big zoom).
 - **A texture bed** from the idea's world (flaps clattering, a crowd, keys) under the build and the ride.
