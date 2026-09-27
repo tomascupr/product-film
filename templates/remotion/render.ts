@@ -58,7 +58,7 @@ run(ffmpeg, ["-v", "error", "-y", "-i", blurred, "-c:v", "libvpx-vp9", "-b:v", "
 run(ffmpeg, ["-v", "error", "-y", "-ss", String(posterSeconds), "-i", blurred, "-frames:v", "1", "-q:v", "2", join(out, "poster.jpg")]);
 
 // 4. Loop seam: the last 8 and first 8 frames, played twice back to back, in one sheet.
-run(ffmpeg, ["-v", "error", "-y", "-stream_loop", "1", "-i", join(out, `${name}-1080p60.mp4`), "-vf", `select='between(n\\,${frames - 8}\\,${frames + 7})',scale=320:180,tile=8x2`, "-frames:v", "1", "-fps_mode", "vfr", join(out, "loop-seam.png")]);
+run(ffmpeg, ["-v", "error", "-y", "-stream_loop", "1", "-i", join(out, `${name}-1080p60.mp4`), "-vf", `select='between(n\\,${frames - 8}\\,${frames + 7})',scale=320:-2,tile=8x2`, "-frames:v", "1", "-fps_mode", "vfr", join(out, "loop-seam.png")]);
 
 rmSync(master);
 rmSync(blurred);
