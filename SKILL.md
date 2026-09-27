@@ -25,6 +25,8 @@ A film that looks like the product made it: its colors, type, components, logo a
 
 Stop for the user at: the interview, the story checkpoint, anything that spends real money or time (a long music generation, many retakes), and anything outward or hard to undo (committing, pushing, uploading, publishing). Between those, keep going. Don't stop to ask about taste you can show in a still, about a fix a check already points to, or to hand back a draft you would call flat; fix it and show the result.
 
+When the user asks for a run without stops ("no questions", "surprise me", "don't wait for me", a brief to run overnight), take your recommended option at every question and at the checkpoint, write each choice into `film-prompt.md` marked "(chosen for you)", keep the checkpoint's work (ideas, beat sheet, style frames, peak test) as the record, and run the review loop through to a verified render. Outward and hard-to-undo actions still stop. Spending stays within what the user named, or one pass of the film's voice, music and effects if they named nothing.
+
 ## Workflow
 
 1. **Quick discovery.** Just enough to ask good questions: rules files, tokens, components, the logo (and any mascot), the landing page, the main features. Reuse BRAND.md if it exists. See [reference/discovery.md](reference/discovery.md).

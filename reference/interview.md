@@ -43,6 +43,7 @@ How words appear, how scenes connect, what carries the brand (logo animation, a 
 
 ## Don't ask
 
+- Anything the request already answers ("a 20 s vertical teaser, no voice"): write it down marked "(from your request)" and ask only what is left.
 - Anything the code already answers: colors, fonts, radius, spacing.
 - Taste you can show instead: style frames get faster answers than questions.
 - The film's idea: pitch ideas rather than asking for one.
