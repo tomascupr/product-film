@@ -1,0 +1,15 @@
+{
+  "size": [1920, 1080],
+  "fps": 60,
+  "duration": 6,
+  "loop": false,
+  "grid": null,
+  "cues": { "words": 0.4, "out": 4.6 },
+  "voice": {
+    "voice_id": "",
+    "model_id": "eleven_multilingual_v2",
+    "lines": []
+  },
+  "music": null,
+  "sfx": []
+}

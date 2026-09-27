@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>film</title>
+<link rel="icon" href="data:,">
+<style>
+  /* Tokens come from the product (BRAND.md). Hex for anything that animates. */
+  :root { --bg: #0a0a0a; --fg: #fafafa; --accent: #ffd400; }
+  /* Copy the product's fonts into fonts/ and uncomment:
+  @font-face { font-family: Brand; src: url(fonts/brand.woff2) format('woff2'); font-display: block; } */
+  html, body { margin: 0; background: var(--bg); overflow: hidden; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--fg); font-family: Brand, system-ui, sans-serif; }
+  .layer { position: absolute; inset: 0; }
+  /* Punchline: every word keeps its slot from the start, so the line never re-centers. */
+  .punch { display: flex; justify-content: center; align-items: center; gap: .28em; font-size: 140px; font-weight: 600; letter-spacing: -.02em; }
+  .punch span { display: inline-block; visibility: hidden; }
+  .accent { color: var(--accent); }
+</style></head>
+<body>
+<div id="stage">
+  <div class="layer punch" id="p1"><span>Every</span><span>frame</span><span class="accent" data-target="hero-word">measured</span></div>
+</div>
+<script type="module">
+import { boot, set, ease, progress, mix, at } from './kit.js'
+
+// Scene code reads only t and film (film.json, plus voice word timings).
+// Voice-led cue: const t0 = wordAt(film, 'v1', 'measured')  (import wordAt from kit.js)
+function render(t, film) {
+  const { words, out } = film.cues
+  // One word per beat: from the measured grid once film.json has one, 0.4 s (150 BPM) until then.
+  const beat = film.grid ? at(film.grid, 1, 2) - at(film.grid, 1, 1) : 0.4
+  const leave = progress(t, out, 0.25)
+  document.querySelectorAll('#p1 span').forEach((el, i) => {
+    const p = ease(t, words + i * beat, 0.3)
+    set(el, { vis: p > 0 && leave < 1, op: p * (1 - leave), y: mix(36, 0, p), blur: (1 - p) * 16 + leave * 12 })
+  })
+}
+boot(render)
+</script>
+</body></html>
