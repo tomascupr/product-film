@@ -18,8 +18,9 @@ Run 3 or 4 read-only sweeps in parallel (Explore subagents), one topic each, and
    - Extract: background, foreground, muted, card, border and accent in dark and light, plus hover and pressed states.
    - Also: radius, fonts and where they load from, and the easing curves and springs the UI uses (grep `cubic-bezier`, `spring`, `transition`).
 3. **Components and signature elements.**
+   - Animation the brand already owns: Lottie or After Effects files for the logo, icons or a character (ask for them).
    - Button variants, markers or status glyphs, stamps, badges, spinners and loaders (and how submit buttons show loading), avatars, toggles, cards.
-   - Brand icons for partner names, and the logo (SVG, component or model). For a partner the film features, its official brand kit (logo, colors, type).
+   - Brand icons for partner names, and the logo (SVG, component or model). For a partner the film features, its official brand kit: `scripts/brandfetch.py <domain>` gets the logos, colors and fonts (free key in `BRANDFETCH_API_KEY`, 100 fetches on the free plan, cached per domain).
    - Anything the landing page uses as a signature: dashed outlines, dithers, hatch bands, ornaments.
    - For each: path, props, and whether it runs its own clock (motion libraries, `requestAnimationFrame`, `setInterval`, CSS keyframes, shader libraries, async image state).
 4. **Features on screen.**

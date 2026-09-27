@@ -71,8 +71,11 @@ def main():
     bed = np.zeros((length, 2), np.float32)  # music + SFX only
 
     windows = []
+    peaks = []  # (dBFS at mix gain, source): named in the limiter warning so the hot source is obvious
+    level = lambda clip: float(20 * np.log10(np.abs(clip).max() + 1e-9))
     for line in (film.get("voice") or {}).get("lines", []):
         clip = decode(f"audio/vo/{line['id']}.mp3", line.get("filter")) * gain(line.get("gain_db", 0))
+        peaks.append((level(clip), f"voice {line['id']}"))
         start = int(round(line["at"] * SR))
         place(bus, clip, start)
         windows.append((line["at"], line["at"] + len(clip) / SR, line["id"]))
@@ -89,6 +92,7 @@ def main():
         track = decode(music["file"])
         offset = int(round(music.get("from", 0) * SR))
         track = track[offset: offset + length] * gain(music.get("gain_db", 0))
+        peaks.append((level(track), f"music {music['file']}"))
         if len(track) < length:
             print(f"WARNING music ends {(length - len(track)) / SR:.2f} s before the film", file=sys.stderr)
         envelope = np.ones(len(track))
@@ -106,6 +110,7 @@ def main():
 
     for effect in film.get("sfx", []):
         clip = decode(effect["file"]) * gain(effect.get("gain_db", -10))
+        peaks.append((level(clip), f"sfx {os.path.basename(effect['file'])} at {effect['hit']} s"))
         peak = int(np.argmax(np.abs(clip).max(axis=1)))
         place(bus, clip, int(round(effect["hit"] * SR)) - peak)
         place(bed, clip, int(round(effect["hit"] * SR)) - peak)
@@ -128,7 +133,8 @@ def main():
     subprocess.run(base + ['-af', chain, '-c:a', 'pcm_s24le', '-y', bed_out], input=bed.astype(np.float32).tobytes(), check=True)
     note = f", limiter catches {over:.1f} dB of peaks" if over > 0 else ""
     if over > 3:
-        note += " (WARNING: lower the loudest hits or music gain_db instead)"
+        hot = ", ".join(f"{name} {p:+.1f} dBFS" for p, name in sorted(peaks, reverse=True)[:3])
+        note += f" (WARNING: lower the loudest sources instead; hottest at mix gain: {hot})"
     print(f"{args.out}: {film['duration']:.2f} s, {measured['input_i']} LUFS {lift:+.1f} dB -> {args.lufs} LUFS{note}")
 
 

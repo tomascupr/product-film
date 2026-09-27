@@ -35,6 +35,34 @@ No Google Chrome? Set `CHROME_PATH` to any Chromium binary. ffmpeg comes from PA
 - Layers, bottom to top: world scenes under the camera, screen-space textures, world scenes above the texture, the brand element, the product's cursor, words, the user's cursor.
 - Keep the product's look by copying its real markup and classes where you can: open the product's page in the browser, copy the component's rendered HTML and computed styles, and replace its clock with `t`. Mark every redrawn component in BRAND.md "Components" as a faithful reconstruction.
 
+## GSAP and Lottie
+
+Both run inside `render(t)` as long as nothing plays on its own clock.
+
+```html
+<script src="node_modules/lottie-web/build/player/lottie_svg.min.js"></script>
+<script type="module">
+import { boot, gsapAt, lottieClip, wordAt } from './kit.js'
+import { gsap } from './node_modules/gsap/index.js'
+import { SplitText } from './node_modules/gsap/SplitText.js'
+gsap.registerPlugin(SplitText)
+const sting = lottieClip(window.lottie, document.getElementById('sting'), 'img/sting.json')
+let tl
+boot((t, film) => {
+  if (!tl) {                                  // build once, from word times
+    tl = gsap.timeline({ paused: true })
+    tl.from(new SplitText('#title', { type: 'chars' }).chars, { opacity: 0, y: 60, stagger: 0.03 }, wordAt(film, 'v1', 'launch'))
+  }
+  gsapAt(tl, t)
+  sting.at(t, 0.4)
+}, { wait: [sting.ready] })
+</script>
+```
+
+- One paused timeline for the whole film, positioned on word times and cues. A second clock anywhere breaks the frame-exact render.
+- A tween that changes something already on screen (a pop, a bump) gets `immediateRender: false`, or its start state shows from frame 0.
+- Keep the page's purity check (render a time, render another, render the first again, compare): it catches a tween that escaped the timeline. `tests/thirdparty/run.sh` shows the same check for both libraries.
+
 ## Look and measure
 
 ```bash

@@ -1,6 +1,6 @@
 ---
 name: product-film
-description: Makes showreel-grade motion films in code for a product or brand, built on its own design system, components and voice, with voiceover, music and sound design (ElevenLabs optional). Covers launch films, teasers and announcements, feature demos and walkthroughs, explainers, social cuts (1:1, 9:16, 4:5), muted landing-page loops, partner co-launches, event openers and data or metrics stories. Use when someone asks for a product video, promo, launch or teaser video, explainer, demo reel, social video, landing loop or any motion design video for their app, SaaS, codebase or brand. It interviews for the brief, sound and engine (HTML render(t) by default, Remotion as an opt-in), then runs discovery, story and energy planning, voice-led timing, music sync, measured review loops and a verified final render.
+description: Makes showreel-grade motion films in code for a product or brand, built on its own design system, components and voice, with one or several voices, music and sound design (ElevenLabs optional), GSAP and Lottie motion, and partners in their official identity (Brandfetch). Covers launch films, teasers and announcements, feature demos and walkthroughs, explainers, social cuts (1:1, 9:16, 4:5), muted landing-page loops, partner co-launches, event openers and data or metrics stories. Use when someone asks for a product video, promo, launch or teaser video, explainer, demo reel, social video, landing loop or any motion design video for their app, SaaS, codebase or brand. It interviews for the brief, sound and engine (HTML render(t) by default, Remotion as an opt-in), then runs discovery, story and energy planning, voice-led timing, music sync, measured review loops and a verified final render.
 license: MIT
 compatibility: Needs Node 20+ with pnpm, Python 3 with uv, ffmpeg, and Google Chrome or Chromium. ElevenLabs (ELEVENLABS_API_KEY) is optional, for voice, music and sound effects.
 ---
@@ -39,6 +39,16 @@ Stop for the user at: the interview, the story checkpoint, anything that spends 
 8. **Review loop.** Stills at every handoff, then a draft with sound, then `scripts/energy.py`, the energy check and a fresh-eyes critic that has not seen the build (`scripts/critic.py` + [reference/critic.md](reference/critic.md)), then fix and repeat, showing the user frames as you go. See [reference/review.md](reference/review.md).
 9. **Final render, verify, deliver.** See [reference/render.md](reference/render.md): render with motion blur, look at the fastest moves in the encode, run `scripts/verify.py --script film.json`, then send the files and the verify output.
 
+## Tools, and when each earns its place
+
+Reach for these when the film calls for them, not by default; each one exists because a hand-coded version was weaker or slower.
+- **GSAP** (`pnpm add gsap`; every plugin is free, including SplitText, DrawSVG, MotionPath and MorphSVG): choreography that would take pages of tweens. Letters arriving one by one, a line drawing itself, an object flying along a path, a shape morphing. Build one paused timeline on word times and seek it from `render(t)` with `gsapAt` ([reference/engine-html.md](reference/engine-html.md)).
+- **Lottie** (`pnpm add lottie-web`): designed animation the product already owns, such as a logo sting, animated icons or a character from After Effects or LottieFiles. Drive it with `lottieClip`. Stock animation from a marketplace is usually a generic look; prefer the brand's own files.
+- **Brandfetch** (`scripts/brandfetch.py <domain>`, free key): any partner the film features, in its official logos and colors, instead of hand-sourced files.
+- **More than one voice** (`voice_id` per line in `film.json`): dialogue, a control room, an interview. A radio `filter` on a line puts it on air.
+- **Generated footage** (Runway, Veo, fal.ai): the idea's world (a place, a texture, an establishing shot), played as a video clip seeked by `t`. Never the product's own screens, which it would get wrong and make into a false claim.
+- **The fresh-eyes critic** ([reference/critic.md](reference/critic.md)): before every handoff, as the checks' counterpart for what only a viewer notices.
+
 ## Quality floor (whatever the type and ingredients)
 
 - **The product looks like itself.** Its screens use only its own surfaces, colors, borders and shades. An invented card background or tint is the fastest way to make a film look fake to the people who built the product.
@@ -73,6 +83,11 @@ Stop for the user at: the interview, the story checkpoint, anything that spends 
 - **Voice drift.** Timing scenes by hand to a clip breaks the first time the line is regenerated. Key moments to `wordAt(...)`, which fails loudly when a cue word disappears.
 - **ElevenLabs keys can lack permissions.** A restricted key fails with 401 `missing the permission <name>` on those calls only (`voices_read`, text to speech, music, sound effects). Name the missing permission to the user rather than debugging the script.
 - **The key may be set only for interactive shells.** An agent's tool shell is usually non-interactive and skips `~/.zshrc` or `~/.bashrc`. If `eleven.py` says the key is not set, run it through an interactive shell (`zsh -ic '…'`) and suggest moving the export to `~/.zshenv` or `~/.profile`.
+- **GSAP `from` and `fromTo` draw their start state at time 0.** A pop added for a later moment (a clock that bumps on each count) showed its scaled-up start in frame 0 and cropped the cover. Give such tweens `immediateRender: false`; keep the default only for entrances that should be hidden until they play.
+- **Loose GSAP tweens run on GSAP's own clock.** Put every tween on the one paused timeline, and create anything a tween needs (SplitText, generated nodes) once at boot, never inside `render(t)`.
+- **Lottie's time argument is milliseconds.** `lottieClip` seeks by frame to avoid it.
+- **ElevenLabs music sections must be 3 s or longer**, or the request fails.
+- **Compressing the music with make-up gain can push it past 0 dBFS**, so every loud beat hits the limiter. Leave make-up gain off, or cap it with a limiter; `mix.py` names the hottest sources when the limiter works hard.
 - `interpolateColors` (Remotion) and hand-written tweens cannot mix `color-mix()`. Any color that animates is a hex token (kit `mixHex`).
 - Async images (Radix or base-ui avatars, lazy `<img>`) can render empty in a frame. HTML: `boot()` waits for `img.decode()`; keep images in the initial DOM. Remotion: use `<Img>`.
 - Springs that retarget: sum one closed-form step per key, with keys sorted by time.

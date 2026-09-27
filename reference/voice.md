@@ -29,6 +29,8 @@ python3 $SKILL/scripts/eleven.py tts --only v3 --force   # redo one take
 - This writes `audio/vo/<id>.mp3` and `audio/vo/<id>.json` with every word's start and end. Unchanged lines are cached, so re-running costs nothing.
 - Neighbouring lines are sent as context, so the intonation carries across clips.
 - Listen to every clip. Retake a clip for a stumble, a wrong stress or a mispronounced name. Changing the text to fix pronunciation is fine ("S A P" or "sap", whichever the product says).
+- More than one speaker: a line's own `voice_id` (and `settings`) overrides `voice.voice_id`. Neighbouring-line context is only passed between lines of the same speaker, so each voice keeps its own intonation.
+- A word the final mix buries (`verify.py --script` lists it): lift that line with `gain_db` (2 to 4 dB) before ducking the music harder, and re-check.
 - Treated voices: a line's `filter` is an ffmpeg audio filter chain `mix.py` applies to that clip, e.g. a PA or phone voice: `"filter": "highpass=f=400,lowpass=f=3200,aecho=0.8:0.6:40:0.25"`.
 - Voice feel: `film.json` `voice.settings` (`stability`, `similarity_boost`, `style`) and `voice.seed` pass straight through.
 

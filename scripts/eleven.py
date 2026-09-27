@@ -11,6 +11,7 @@ Run from the film folder (it reads film.json). Needs ELEVENLABS_API_KEY. Standar
     python3 eleven.py sfx --text "soft UI click" --seconds 0.5 --out audio/sfx/click.mp3
 
 tts caches: a line is only regenerated when its text, voice or model changed (or --force).
+A line may set its own "voice_id" (and "settings") for a second speaker; voice.voice_id is the default.
 <id>.json holds {text, voice_id, model_id, duration, words: [{w, start, end}]}, seconds from the
 clip's start; kit.js wordAt() adds the line's `at` to put a word on the film's clock.
 """
@@ -83,26 +84,29 @@ def tts(args):
             continue
         meta_path = f"audio/vo/{line['id']}.json"
         model = line.get("model_id", voice.get("model_id", "eleven_multilingual_v2"))
+        # A line can have its own speaker (dialogue, a control room, an interview).
+        speaker = line.get("voice_id", voice["voice_id"])
+        same = lambda other: other.get("voice_id", voice["voice_id"]) == speaker
         if not args.force and os.path.exists(meta_path):
             old = json.load(open(meta_path))
-            if (old["text"], old["voice_id"], old["model_id"]) == (line["text"], voice["voice_id"], model):
+            if (old["text"], old["voice_id"], old["model_id"]) == (line["text"], speaker, model):
                 print(f"{line['id']}: unchanged, cached")
                 continue
         body = {
             "text": line["text"],
             "model_id": model,
-            # Neighbouring lines keep intonation continuous across separate clips.
-            "previous_text": lines[index - 1]["text"] if index else None,
-            "next_text": lines[index + 1]["text"] if index + 1 < len(lines) else None,
+            # Neighbouring lines by the same speaker keep intonation continuous across separate clips.
+            "previous_text": lines[index - 1]["text"] if index and same(lines[index - 1]) else None,
+            "next_text": lines[index + 1]["text"] if index + 1 < len(lines) and same(lines[index + 1]) else None,
         }
-        if voice.get("settings"):
-            body["voice_settings"] = voice["settings"]
+        if line.get("settings", voice.get("settings")):
+            body["voice_settings"] = line.get("settings", voice.get("settings"))
         if voice.get("seed") is not None:
             body["seed"] = voice["seed"]
-        data = call("POST", f"/v1/text-to-speech/{voice['voice_id']}/with-timestamps?output_format=mp3_44100_192", body)
+        data = call("POST", f"/v1/text-to-speech/{speaker}/with-timestamps?output_format=mp3_44100_192", body)
         write(f"audio/vo/{line['id']}.mp3", base64.b64decode(data["audio_base64"]))
         words = words_from(data["alignment"])
-        meta = {"text": line["text"], "voice_id": voice["voice_id"], "model_id": model,
+        meta = {"text": line["text"], "voice_id": speaker, "model_id": model,
                 "duration": words[-1]["end"] if words else 0, "words": words}
         with open(meta_path, "w") as handle:
             json.dump(meta, handle, indent=1)

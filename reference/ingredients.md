@@ -65,7 +65,7 @@ Rules for magic moves:
 ## Partner and integration logos
 
 - Every partner name shows its logo inline, at about 0.82 of the text size. Use the product's brand icon set if it has one.
-- A partner the film is about (a launch together, a model or platform provider, a key integration) can co-star in its own identity: logo, colors and type from its official brand or press kit, following its brand guidelines. Pair the two brands so both read clearly.
+- A partner the film is about (a launch together, a model or platform provider, a key integration) can co-star in its own identity: logo, colors and type from its official brand or press kit, following its brand guidelines. `scripts/brandfetch.py <domain>` fetches the official marks and colors (and caches them); a partner font marked custom stays inside its logo. Pair the two brands so both read clearly: the partner's accent can mark its own row, card or label, while the film's key color stays the product's.
 - In a closing headline, logos can fly in from the proof scenes and land as their words do.
 
 ## Proof moments
@@ -73,6 +73,15 @@ Rules for magic moves:
 - A search result, an AI answer, a dashboard number, a quote. Each is its own scene: lo-fi but faithful, on the product's background, big enough to read.
 - If punchlines were chosen, one follows each proof and names the outcome in a few words.
 - Only true outcomes and the product's own demo numbers; no guarantees.
+
+## Motion vocabulary (GSAP)
+
+Use these where a word or moment asks for them, so the motion says something:
+- **Letters arriving** (SplitText, stagger 0.03 to 0.05 s): a name, a claim, a status. Pair it with the word being spoken.
+- **A line drawing itself** (DrawSVG): a trail, a route, a graph, a signature, an underline on the key word.
+- **Travel along a path** (MotionPath, `autoRotate: true`): something launching, delivering, connecting two places.
+- **A shape turning into another** (MorphSVG): a problem becoming a solution, one icon becoming the next.
+- **A snap with overshoot** (`back.out(2)` or `expo.out`): status changes, stamps, a lockup landing.
 
 ## Brand texture
 

@@ -46,8 +46,11 @@ async function open(browser, url, scale = 1) {
   const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: scale })
   page.on('pageerror', e => { pageError ??= e })
   page.on('console', m => m.type() === 'error' && console.error('console:', m.text(), m.location()?.url ?? ''))
+  // An error while the page loads (a bad import, a missing file) would otherwise surface as a silent
+  // 30 s timeout; race it so the run stops at once with the page's own message.
+  const failed = new Promise((_, fail) => page.once('pageerror', e => fail(new Error(`page error while loading: ${e.message}`))))
   await page.goto(url)
-  await page.waitForFunction(() => window.ready)
+  await Promise.race([page.waitForFunction(() => window.ready), failed])
   await page.evaluate(() => window.ready)
   if (pageError) throw new Error(`page error: ${pageError.message}`)
   return page

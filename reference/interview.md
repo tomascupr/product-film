@@ -26,6 +26,7 @@ Write every answer into BRAND.md (product-wide) or `film-prompt.md` (this film),
 | Question | Options |
 |---|---|
 | Voiceover? | ElevenLabs narrator (Recommended for launch, demo and explainer films) / Their own recorded voice / No voice, music and sound design only (Recommended for muted loops and short teasers) |
+| More than one voice? (only if the idea has a room, a dialogue or a call and answer) | One narrator (Recommended) / A main voice plus answering voices, each its own `voice_id` |
 | Which voice? (ask every time a voice is chosen) | The account's voices from `eleven.py voices`: cloned and professional first, the last used one first of all, marked "(last time)" |
 | What music? | Composed with ElevenLabs to the film's acts (Recommended) / Your licensed track or stems / Silent |
 | Sound design? | Designed with ElevenLabs: risers, impacts, whooshes on moves, a texture from the idea's world, UI sounds (Recommended) / UI sounds only / None |
@@ -41,7 +42,7 @@ Write every answer into BRAND.md (product-wide) or `film-prompt.md` (this film),
 | What carries the brand on screen? (multi) | Logo animation (it draws or reveals itself) / Their mascot or character (only if they have one) / Wordmark and tagline / Product UI only |
 | How do words appear? | Big punchlines between scenes, word by word / Short captions over the scenes / No words, the UI (and voice) speaks |
 | How do scenes connect? | Magic moves (one element travels into the next scene) / One big canvas with camera moves / Clean cuts on the beat |
-| What else should it include? (multi) | Cursor interactions (clicks, typing) / Partner or integration logos / Proof moments (results, metrics, quotes) / Their brand texture or pattern (only if they have one) |
+| What else should it include? (multi) | Cursor interactions (clicks, typing) / Partner or integration logos (from Brandfetch) / Proof moments (results, metrics, quotes) / Their brand texture or pattern (only if they have one) / Their own Lottie animation (logo sting, icons, character) / Generated footage for the idea's world (needs a video-generation key) |
 
 With a voiceover, recommend punchlines that echo the voice's key phrase, or no words at all. Captions that say something different from the voice compete with it.
 

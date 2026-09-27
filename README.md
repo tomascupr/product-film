@@ -9,10 +9,11 @@ Every frame is a pure function of time, rendered by headless Chrome (or Remotion
 1. Reads the product's code and site for its colors, type, components, logo and copy rules.
 2. Interviews you for the film type, the brief, the sound and the engine.
 3. Pitches ideas, then writes a beat sheet with an energy curve, a camera plan and a planned first frame (the cover most players show), and checks the peak in a short motion test before building everything.
-4. Generates the voice (with word timings), music and sound design with ElevenLabs, or uses your own.
-5. Builds the scenes keyed to words and beats. Camera holds are fitted to the text being read and kept on the content, so lines are never cropped and the frame never drifts into empty space.
-6. Reviews drafts by measurement and by fresh eyes: `energy.py` finds dead stretches and loud hits that land on still frames, `film.mjs check` finds text that is too small at phone size, covered, overlapping or cropped by the camera, and `critic.py` packs the draft for a reviewer that never saw the build, who scores the cover, energy, peak, composition, readability and originality.
-7. Renders the final with motion blur, saves the first frame at thumbnail size with its text checked, and verifies duration, color tags, loudness, a first frame that is not blank, audio gaps and that every script word survives the mix.
+4. Generates the voice (with word timings, one voice or several), music and sound design with ElevenLabs, or uses your own. Partners appear in their official identity via Brandfetch.
+5. Choreographs with GSAP (letter reveals, drawn lines, flights along a path) and plays Lottie animation, both driven frame by frame so every render is identical.
+6. Builds the scenes keyed to words and beats. Camera holds are fitted to the text being read and kept on the content, so lines are never cropped and the frame never drifts into empty space.
+7. Reviews drafts by measurement and by fresh eyes: `energy.py` finds dead stretches and loud hits that land on still frames, `film.mjs check` finds text that is too small at phone size, covered, overlapping or cropped by the camera, and `critic.py` packs the draft for a reviewer that never saw the build, who scores the cover, energy, peak, composition, readability and originality.
+8. Renders the final with motion blur, saves the first frame at thumbnail size with its text checked, and verifies duration, color tags, loudness, a first frame that is not blank, audio gaps and that every script word survives the mix.
 
 ## Requirements
 
@@ -21,6 +22,8 @@ Every frame is a pure function of time, rendered by headless Chrome (or Remotion
 - ffmpeg on PATH
 - Google Chrome, or any Chromium via `CHROME_PATH`
 - Optional: an ElevenLabs API key in `ELEVENLABS_API_KEY` for voice, music and sound effects
+- Optional: a Brandfetch key in `BRANDFETCH_API_KEY` (free) for partner logos and colors
+- Optional, per film: `pnpm add gsap lottie-web` for GSAP choreography and Lottie animation
 - Optional: a Remotion company license, if you choose the Remotion engine above Remotion's free team size
 
 ## Install
@@ -36,8 +39,8 @@ Copy or clone this folder into your agent's skills directory, for example `~/.cl
 | `templates/html/` | The HTML engine: `index.html`, `kit.js` (time, springs, camera moves, `fit` and `inside` for text holds, shake, beat kicks, color mixing), `film.mjs` (serve, stills, measure, check, render with a cover preview) |
 | `templates/remotion/` | The Remotion engine's config and kit twins |
 | `templates/BRAND.md`, `templates/film-prompt.md` | The product kit and the per-film brief |
-| `scripts/` | `eleven.py`, `beats.py`, `audio-edit.py`, `mix.py`, `energy.py`, `critic.py`, `verify.py` |
-| `tests/` | `node --test tests/` for the kit's camera and color maths; `tests/check/` is a fixture for `film.mjs check` |
+| `scripts/` | `eleven.py`, `brandfetch.py`, `beats.py`, `audio-edit.py`, `mix.py`, `energy.py`, `critic.py`, `verify.py` |
+| `tests/` | `node --test tests/` for the kit's camera and color maths; `tests/thirdparty/run.sh` proves GSAP and Lottie render frame-exact; `tests/check/` is a fixture for `film.mjs check` |
 
 ## Credits
 
