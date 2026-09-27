@@ -24,11 +24,11 @@ Ask about the voice every time, even when BRAND.md has one: a film's voice is a 
 |---|---|
 | Voiceover? | ElevenLabs narrator / Their own recorded voice / No voice, music and sound design only (often right for muted loops and short teasers) |
 | Which voice, and how many? | The account's voices from `eleven.py voices`, cloned and professional first, the last used one marked "(last time)". More than one only if the idea has a room, a dialogue or a call and answer. |
-| What music? | Composed with ElevenLabs to the film's acts / Their licensed track or stems / Silent |
-| Sound design? | Designed with ElevenLabs (music.md) / UI sounds only / None |
+| What music? | Composed with ElevenLabs to the film's acts / Their licensed track or stems / Synthesized in code / Silent |
+| Sound design? | Designed with ElevenLabs (music.md) / Synthesized in code / UI sounds only / None |
 
 - If `eleven.py voices` fails with `missing the permission voices_read`, offer the voice recorded in BRAND.md and ask for a voice ID pasted from the ElevenLabs Voices page; enabling `voices_read` on the key brings the list back.
-- If `ELEVENLABS_API_KEY` is not set, say so before asking, since the voice and composed music need it.
+- If `ELEVENLABS_API_KEY` is not set, say so before asking, since the voice and composed music need it; music and sound design can still be synthesized in code (music.md).
 
 ## Ingredients come with the idea
 

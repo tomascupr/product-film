@@ -55,7 +55,11 @@ uv run --with numpy --with imageio-ffmpeg python3 $S/audio-edit.py edit.json
 - Film length is a whole number of bars. Cut slow intros short.
 - Keep licensed audio out of any git repo, and write its source and license into BRAND.md.
 
-### D. Silent
+### D. Synthesized in code (no key needed)
+
+Write a short numpy script (`uv run --with numpy python3 synth.py`) that renders WAVs straight onto the grid: a kick and hat bed at the film's tempo, a riser that ends on the peak, sub thumps, clicks. It is free, and every hit lands on the exact sample. Plain synthesis sounds thin next to a composed track, so make it the score only when the idea wants a synthetic sound (a terminal, a machine, a countdown); otherwise use it for sound effects and placeholders. Point `film.json` `music.file` and `sfx[].file` at the WAVs; `mix.py` reads any format.
+
+### E. Silent
 
 Pick a tempo anyway (120 BPM), set `film.json` `grid` from it, and plan on it.
 
@@ -71,7 +75,7 @@ Sound design carries as much of the energy as the picture. Layer it like a trail
 - **On the moves that matter:** a whoosh sized to the move. On every move it becomes the stock whoosh-and-ding look.
 - **A texture bed** from the idea's world (flaps clattering, a crowd, keys) under the build and the ride.
 - **UI sounds** (clicks, pings, chimes) stay short and dry, one per meaningful event.
-Generate a small set once (`riser`, `impact`, `whip`, `texture`, `click`) and reuse them; vary gain, not files.
+Generate a small set once (`riser`, `impact`, `whip`, `texture`, `click`) and reuse them; vary gain, not files. Without a key, synthesize the set instead (D).
 - In `film.json` `sfx`, `hit` is the moment the transient should land. `mix.py` finds each clip's peak and starts it at `hit - peak`.
 - The music's drop and the picture's peak are the same frame. After generating, check the per-bar loudness from `beats.py`; if the drop missed, cut on bars (C) so it lands.
 
