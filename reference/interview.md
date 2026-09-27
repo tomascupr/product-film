@@ -14,6 +14,7 @@ The user decides what the film shows, how it sounds, and how it is built. Ask af
 
 - Ask the engine question only when the product's UI is React. Otherwise use HTML and say so in one line. Recommend Remotion only when reusing real components clearly beats redrawing them (many complex screens, a design system that changes often, a team that will keep editing films), and name the license cost.
 - Add the format (16:9, 9:16, 1:1, 4:5) if social is in play.
+- Ask for a film whose feel they want, as a file you can open (a video, a frame, a folder of stills). None is a fine answer: you will name one (story.md).
 
 ## Round 2: sound
 

@@ -4,6 +4,11 @@
 
 Name one or two films whose energy and camera grammar this one should match (the user's favourites, or launch films of the product's peers) and say what you borrow from each. It gives the taste a concrete target.
 
+A reference you can open beats one you remember. When the user has one as a file (a video, a single frame, a folder of their own stills), study it before pitching:
+- Put a video in its own folder (`refs/`) and pack it there: `uv run --with numpy --with imageio-ffmpeg python3 $SKILL/scripts/critic.py launch.mp4`. It writes contact sheets every 1/3 s and `energy.txt`, the reference's energy curve. Run it from `refs/`, not the film folder, or it reads the film's `film.json` and `audio/bed.wav` instead of the reference's own sound.
+- List its hard cuts: `ffmpeg -i launch.mp4 -vf "select='gt(scene,0.3)',showinfo" -an -f null - 2>&1 | grep -o 'pts_time:[0-9.]*'`. A film built on camera moves lists few; read its transitions off the sheets.
+- Write what you take into `film-prompt.md`: shot lengths, how scenes connect, how type enters and leaves, palette and texture, and its mean motion as the draft's target. Take the grammar, never the content, logos or characters.
+
 A film people remember has an idea, not only a sequence of features. Pitch 2 or 3 ideas: a one-line premise, the opening image, and the ingredients the idea brings (how words appear, how scenes connect, what carries the brand, any cursor, partner logos, proof, Lottie or generated footage). At least one should look beyond the product's own screens: a familiar format, place or object the audience reads instantly, whose logic carries the message (a month-end close as a heist, a release as a weather forecast, a report as a receipt, a launch as a launch). One can be the straight product story. The user picks, then the beat sheet serves the idea.
 
 Build the first draft ambitiously. Review notes pull a film back; they rarely push it further.

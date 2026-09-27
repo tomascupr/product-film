@@ -11,6 +11,7 @@ Voice: <none | voice name, N lines, ~W words>. Music: <composed (audio/music-pla
 
 <direction>
 Idea: <the premise the user picked, in one line, and its opening image>.
+Reference: <the film or frames we match, and what we take: shot lengths, transitions, type entrances, energy target (its mean motion)>.
 <The feel in 3 short lines, in the product's own voice.>
 Ingredients (from the interview): <brand element> · <how words appear> · <how scenes connect> · <extras>.
 The product's screens use only its own surfaces, colors, borders and effects. The idea's world and any featured partner bring their own look.
