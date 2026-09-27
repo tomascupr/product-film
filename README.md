@@ -11,7 +11,7 @@ Every frame is a pure function of time, rendered by headless Chrome (or Remotion
 3. Pitches ideas, then writes a beat sheet with an energy curve, a camera plan and a planned first frame (the cover most players show), and checks the peak in a short motion test before building everything.
 4. Generates the voice (with word timings), music and sound design with ElevenLabs, or uses your own.
 5. Builds the scenes keyed to words and beats. Camera holds are fitted to the text being read and kept on the content, so lines are never cropped and the frame never drifts into empty space.
-6. Reviews drafts by measurement: `energy.py` finds dead stretches and loud hits that land on still frames, and `film.mjs check` finds text that is too small at phone size, covered, overlapping or cropped by the camera.
+6. Reviews drafts by measurement and by fresh eyes: `energy.py` finds dead stretches and loud hits that land on still frames, `film.mjs check` finds text that is too small at phone size, covered, overlapping or cropped by the camera, and `critic.py` packs the draft for a reviewer that never saw the build, who scores the cover, energy, peak, composition, readability and originality.
 7. Renders the final with motion blur, saves the first frame at thumbnail size with its text checked, and verifies duration, color tags, loudness, a first frame that is not blank, audio gaps and that every script word survives the mix.
 
 ## Requirements
@@ -32,11 +32,11 @@ Copy or clone this folder into your agent's skills directory, for example `~/.cl
 | Path | What it holds |
 |---|---|
 | `SKILL.md` | Principles, workflow, quality floor, traps |
-| `reference/` | One file per step: discovery, interview, story (film types), ingredients, voice, music, engines, review, render |
+| `reference/` | One file per step: discovery, interview, story (film types), ingredients, voice, music, engines, review, the critic's prompt, render |
 | `templates/html/` | The HTML engine: `index.html`, `kit.js` (time, springs, camera moves, `fit` and `inside` for text holds, shake, beat kicks, color mixing), `film.mjs` (serve, stills, measure, check, render with a cover preview) |
 | `templates/remotion/` | The Remotion engine's config and kit twins |
 | `templates/BRAND.md`, `templates/film-prompt.md` | The product kit and the per-film brief |
-| `scripts/` | `eleven.py`, `beats.py`, `audio-edit.py`, `mix.py`, `energy.py`, `verify.py` |
+| `scripts/` | `eleven.py`, `beats.py`, `audio-edit.py`, `mix.py`, `energy.py`, `critic.py`, `verify.py` |
 | `tests/` | `node --test tests/` for the kit's camera and color maths; `tests/check/` is a fixture for `film.mjs check` |
 
 ## Credits

@@ -51,7 +51,11 @@ Then watch the draft muted at 1x on a phone-sized window and ask: would I stop s
 
 Name what's flat when you hand off, with the fix you made or propose. Never hand off a draft you'd call flat.
 
-## 4. The checklist, every round
+## 4. Fresh eyes, before every handoff
+
+Checks measure; they cannot say "it feels flat" or "that empty band looks wrong". A reviewer who has not watched the build can. Pack the draft with `critic.py` and hand it to a fresh reviewer with the prompt in [critic.md](critic.md): a new subagent that gets the prompt and the folder, and nothing from the build conversation. Fix each high finding, or say in the handoff why it stays, and show the user the verdict and scores next to your own energy check. After a round of fixes, use a new reviewer; one that saw the last draft is no longer fresh.
+
+## 5. The checklist, every round
 
 - **Background:** one color. No invented shades. Surfaces only where the product has them.
 - **Borders:** none around floating elements. Lines only where they mean something.
@@ -73,6 +77,6 @@ Name what's flat when you hand off, with the fix you made or propose. Never hand
 - **Voice:** every keyed moment lands on or just before its word; no on-screen words fight the voice; the music never buries a key word.
 - **Claims:** only what the product does, as the user states it.
 
-## 5. Show the product owner
+## 6. Show the product owner
 
 Send frames or a draft as soon as a round is coherent. Their notes come fast and precise ("remove the borders", "same background", "it's slow here"). Fold every note into BRAND.md or the prompt, so the next film starts from it.
