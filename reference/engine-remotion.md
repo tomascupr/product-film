@@ -70,7 +70,7 @@ Add per product: `tokens.ts` (the product's colors, fonts, springs, all as hex),
 
 ## Rules for scene code
 
-- Camera: keys are `[t, x, y, zoom, spring]` with `snap`, `whip` or `creep` per key (`kit/camera.ts`). Every hold on text uses `fit(box, frame)` from the text's measured box (see Measuring), passed through `inside(hold, contentBounds, frame)` so the frame stays on the content, where `frame` is `useVideoConfig()`. Add `shake(t, peak)` on impacts and `beatKick(t, grid, from, to)` so holds breathe. Animated colors use Remotion's `interpolateColors` with hex tokens.
+- Camera: keys are `[t, x, y, zoom, spring]` with `snap`, `whip` or `creep` per key (`kit/camera.ts`). Every hold on text uses `fit(box, frame)` from the text's measured box (see Measuring), passed through `inside(hold, contentBounds, frame)` so the frame stays on the content, where `frame` is `useVideoConfig()`; `project` and `worldTransform` take it too. Add `shake(t, peak)` on impacts and `beatKick(t, grid, from, to)` so holds breathe. Animated colors use Remotion's `interpolateColors` with hex tokens.
 
 - Read time once: `const t = useTime()`. Everything is a function of `t` and the cues. No hooks with state, no effects that change what is drawn. A `useLayoutEffect` that paints a canvas from `t` is fine.
 - Timeline in `cues.ts` from `film.json`, the beat grid (`b(bar, beat, fraction)`) and voice words (a `wordAt` like kit.js). Layout in `layout.ts`, with measured numbers commented as measured.

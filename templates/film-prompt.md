@@ -6,7 +6,7 @@ Read `../BRAND.md` first. It holds the look, the brand element, the components, 
 
 <inputs>
 Decided: <width>x<height>, 60 fps, <dark|light>, <seconds> s, engine <HTML | Remotion>.
-Voice: <none | voice name, N lines, ~W words>. Music: <composed (audio/music-plan.json) | title, artist, license, edit bars a-b | silent>, grid <BPM>, <meter>. SFX: <list>.
+Voice: <none | voice name, N lines, ~W words>. Music: <composed (audio/music-plan.json) | title, artist, license, edit bars a-b | synthesized in code | silent>, grid <BPM>, <meter>. SFX: <list>.
 </inputs>
 
 <direction>
@@ -40,5 +40,5 @@ Energy: <the curve you chose, and where the peak is>.
 </beat-sheet>
 
 <start>
-Before any scene code, show the chosen idea, the beat sheet (and the voice script, read aloud once for fit), style frames of the opening and one key scene, and a motion test of the peak. Wait for OK.
+Before any scene code, show the chosen idea, the beat sheet (and the voice script, read aloud once for fit), style frames of the opening and one key scene, and a motion test of the peak. Wait for OK, unless this is a run without stops (SKILL.md).
 </start>

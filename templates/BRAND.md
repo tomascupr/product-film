@@ -6,7 +6,7 @@ Sources: <landing URL>, <design system path>, <rules files>, product owner notes
 ## The brief (from the interview)
 - Engine: <HTML render(t) | Remotion, license: <who holds it>>.
 - Plays: <landing loop, muted | social, with sound | launch or demo video>. Format: <16:9>. Length: <s>.
-- Sound: voice <none | ElevenLabs voice name (voice_id), model, last used for <film>> · music <composed with ElevenLabs | track, license | silent> · SFX <sparse UI sounds | none>.
+- Sound: voice <none | ElevenLabs voice name (voice_id), model, last used for <film>> · music <composed with ElevenLabs | track, license | synthesized in code | silent> · SFX <sparse UI sounds | none>.
 - Must show: <features, by their product names>.
 - Ingredients chosen: <brand element: logo animation / mascot / wordmark / UI only> · <words: punchlines / captions / none> · <transitions: magic moves / camera / cuts> · <extras: cursors, partner logos, proof moments, texture>.
 - Ending: <tagline, call to action, URL>.
