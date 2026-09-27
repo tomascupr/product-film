@@ -69,6 +69,7 @@ Reach for these when the film calls for them, not by default; each one exists be
 - slow Ken Burns drifts over static screenshots
 - purple-to-blue gradient blobs, glowing particles, lens flares, a "futuristic" HUD
 - a floating 3D device mockup spinning in empty space
+- labels parked in the frame's corners, and decorative borders around the picture
 - typewriter captions under every scene, or numbered "01 / 02 / 03" chapter cards
 - stock whoosh-and-ding on every element, or royalty-free "corporate uplifting" music
 - the same transition between every pair of scenes

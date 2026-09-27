@@ -35,6 +35,7 @@ Checks cannot say "that empty band looks wrong". A reviewer who has not watched 
 - **Stray layers:** one still per scene; nothing from another scene shows through (empty tiles, a faded card).
 - **Handoffs:** each magic move lands exactly on its destination (measured).
 - **Loops:** the last frame equals frame 0 (decode and compare).
+- **Pops:** a layer that shows for a frame or two at a handoff, or text crossing during a swap. Samples a third of a second apart step over them, so look at 12 consecutive frames around every handoff and the fastest moves: `ffmpeg -ss <t - 0.1> -i out/draft/draft.mp4 -vf "scale=320:-1,tile=6x2" -frames:v 1 out/review/strip-<t>.png`.
 - **Fast moves in the final encode:** motion blur can smear text on a whip (render.md).
 
 ## 5. Show the product owner

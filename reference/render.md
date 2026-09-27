@@ -22,7 +22,7 @@ Both engines:
 - Motion blur means 4 subframes averaged per frame. Use it only for finals, since it takes 4x the render time. Run long renders in the background and review other things meanwhile.
 - Frame 0 must work as a cover on its own (review.md), because many players ignore the poster. Where a platform takes a custom thumbnail, upload the poster too.
 - The poster is a settled frame that states the message (the headline, the product name with its status), never a mid-effect frame and never frame 0.
-- After the blurred render, take stills from the encode at the fastest moves (`ffmpeg -ss <t> -i out/<name>/<name>.mp4 -frames:v 1 x.png`): motion blur can smear text on a whip.
+- After the blurred render, look at the encode's consecutive frames at the fastest moves (the strip in review.md, on `out/<name>/<name>.mp4`): motion blur can smear text on a whip.
 - The output is BT.709, limited range, and tagged as such.
 
 ## Verify before sending

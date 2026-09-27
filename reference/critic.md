@@ -24,7 +24,7 @@ Look for these, because they are what separates a film people finish from one th
 - **Repetition.** Does the same move, transition or layout happen three or more times, so the film starts to feel like a template?
 - **Composition.** Is anything off balance: a large empty band, content crowded to one side, a line that sits low with nothing under it?
 - **Readability.** Can every line being read be read at phone size? Is any word cropped by the frame, covered, crossed by other text, or on screen too briefly to read?
-- **Generic looks.** Centered text fading up in every scene, slow drifts over screenshots, gradient blobs, glows and particles, floating device mockups, numbered chapter cards, the same transition everywhere.
+- **Generic looks.** Centered text fading up in every scene, slow drifts over screenshots, gradient blobs, glows and particles, floating device mockups, numbered chapter cards, labels parked in the corners, decorative frame borders, the same transition everywhere.
 - **The ending.** Does it land, or fade out politely? Does the last image say who made this and what to do next?
 - **Against the brief.** Does the film say what the brief says, in the order it plans, with the peak where it plans it? Anything on screen that the brief does not contain?
 
