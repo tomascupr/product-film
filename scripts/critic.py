@@ -106,7 +106,7 @@ def main():
         guide.append(f"{n}. peak.png: 10 frames 0.1 s apart from {max(0, peak - 0.3):.2f} s, around the intended peak at {peak:.2f} s.")
         n += 1
     guide.append(f"{n}. frames/: every sampled frame at 540 px, named by time, to zoom in.")
-    guide.append(f"{n + 1}. energy.txt: measured motion per 0.25 s, dead stretches, and loud hits that land on still frames.")
+    guide.append(f"{n + 1}. energy.txt: measured motion per 0.25 s with the sound's loudness beside it, dead stretches, and loud hits that land on still frames.")
     if os.path.exists(os.path.join(out, "brief.md")):
         guide.append(f"{n + 2}. brief.md: what the film was meant to do. Read it only after judging the film as a viewer.")
     open(os.path.join(out, "README.txt"), "w").write("\n".join(guide) + "\n")

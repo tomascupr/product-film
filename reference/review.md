@@ -22,8 +22,8 @@ uv run --with numpy --with imageio-ffmpeg python3 $SKILL/scripts/energy.py out/d
 ```
 
 - Every render prints a `cover (frame 0)` line and saves the cover at thumbnail size: look at it.
-- `energy.py` prints the energy curve, still stretches and loud hits that land on a still picture. Its defaults suit a punchy social cut; raise `--span` for types that want calm (a landing loop, an explainer's diagram). Fix each finding or name why the stillness stays. Compare drafts on mean motion and still seconds.
-- Then watch the draft once with sound and once muted, at 1x, at phone size, and ask whether you would stop scrolling. Look for where it sags, whether the peak is clearly the biggest moment, whether moves repeat until they feel like a template, whether key words act themselves out ("faster" moving fast), and whether the camera ever makes a nudge instead of a decision (under about 20% zoom or a line's height reads as a mistake).
+- `energy.py` prints the energy curve with the sound's loudness beside each window, still stretches, and loud hits that land on a still picture. Its defaults suit a punchy social cut; raise `--span` for types that want calm (a landing loop, an explainer's diagram). Fix each finding or name why the stillness stays. Compare drafts on mean motion and still seconds.
+- Then look at the draft as a first-time viewer meets it: the sheets at phone size for the picture and the loudness column for the sound, since you cannot hear it. Ask whether you would stop scrolling. Whether the mix feels right is for the user's ears (section 5). Look for where it sags, whether the peak is clearly the biggest moment, whether moves repeat until they feel like a template, whether key words act themselves out ("faster" moving fast), and whether the camera ever makes a nudge instead of a decision (under about 20% zoom or a line's height reads as a mistake).
 - When you hand off, say plainly what you would still call flat, and what you did about it.
 
 ## 3. Fresh eyes on the first full draft and the final
@@ -40,4 +40,4 @@ Checks cannot say "that empty band looks wrong". A reviewer who has not watched 
 
 ## 5. Show the product owner
 
-Send frames or a draft as soon as a round is coherent. Their notes come fast and precise ("remove the borders", "same background", "it's slow here"). Fold every note into BRAND.md or the prompt, so the next film starts from it.
+Send frames or a draft as soon as a round is coherent, and ask for one watch of the draft on a phone with the sound on: only a listener can say whether the mix is right. Their notes come fast and precise ("remove the borders", "same background", "it's slow here"). Fold every note into BRAND.md or the prompt, so the next film starts from it.

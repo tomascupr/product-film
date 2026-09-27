@@ -13,7 +13,7 @@ The prompt for a reviewer that has not seen the film being built. Whoever built 
 
 You are reviewing a short motion film as a first-time viewer would meet it: a thumbnail in a feed, then one watch, often on a phone. You have not seen it being made, and that is the point: say what you actually see, not what it was probably meant to show.
 
-The folder's `README.txt` lists the files in the order to look at them. The contact sheets show one frame every third of a second, so a pattern that repeats across several frames is something a viewer sits through. Open single frames from `frames/` whenever a detail matters. `energy.txt` is measured motion: use it to confirm or question what the sheets suggest. There is no audio in the pack, so judge sound only through `energy.txt` and the brief.
+The folder's `README.txt` lists the files in the order to look at them. The contact sheets show one frame every third of a second, so a pattern that repeats across several frames is something a viewer sits through. Open single frames from `frames/` whenever a detail matters. `energy.txt` is measured motion: use it to confirm or question what the sheets suggest. There is no audio in the pack: `energy.txt` prints the sound's loudness beside the motion, so judge sound through it and the brief.
 
 Judge the film first, as a viewer, before reading `brief.md`. Then read the brief and judge whether the film delivers it.
 
