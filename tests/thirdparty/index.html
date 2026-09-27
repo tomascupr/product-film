@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>third-party fixture</title><link rel="icon" href="data:,">
-<style>html, body { margin: 0; background: #22222c; } #stage { position: relative; width: 500px; height: 400px; overflow: hidden; }
+<style>html, body { margin: 0; background: #22222c; } #stage { position: relative; width: var(--w); height: var(--h); overflow: hidden; }
 #lottie { position: absolute; left: 0; top: 0; width: 500px; height: 200px; } svg.line { position: absolute; left: 0; top: 200px; }
 #word { position: absolute; left: 40px; top: 320px; font: 600 40px sans-serif; color: #fafaf2; }</style>
 <script src="node_modules/lottie-web/build/player/lottie_svg.min.js"></script></head>
-<body><div id="stage">
+<body><div id="stage" data-target="stage">
   <div id="lottie"></div>
   <svg class="line" width="500" height="120"><path id="path" d="M20 100 C 150 0, 350 120, 480 20" stroke="#ffdd04" stroke-width="6" fill="none"/></svg>
   <div id="word">Frame exact</div>
