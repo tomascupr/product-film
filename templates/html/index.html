@@ -22,18 +22,21 @@
   <div class="layer punch" id="p1"><span>Every</span><span>frame</span><span class="accent" data-target="hero-word">measured</span></div>
 </div>
 <script type="module">
-import { boot, set, ease, progress, mix, at } from './kit.js'
+import { boot, set, step, snap, whip, at } from './kit.js'
 
 // Scene code reads only t and film (film.json, plus voice word timings).
+// The entrance is a placeholder; each film takes its own from its idea.
 // Voice-led cue: const t0 = wordAt(film, 'v1', 'measured')  (import wordAt from kit.js)
 function render(t, film) {
   const { words, out } = film.cues
   // One word per beat: from the measured grid once film.json has one, 0.4 s (150 BPM) until then.
   const beat = film.grid ? at(film.grid, 1, 2) - at(film.grid, 1, 1) : 0.4
-  const leave = progress(t, out, 0.25)
   document.querySelectorAll('#p1 span').forEach((el, i) => {
-    const p = ease(t, words + i * beat, 0.3)
-    set(el, { vis: p > 0 && leave < 1, op: p * (1 - leave), y: mix(36, 0, p), blur: (1 - p) * 16 + leave * 12 })
+    // Each word rises out of a mask at its own baseline (% of its own box), a hair of overshoot on landing.
+    const rise = (1 - step(t - words - i * beat, snap)) * 100
+    const leave = step(t - out - i * 0.05, whip)  // word by word, in the order they came
+    set(el, { vis: leave < 0.99, op: 1 - leave, tr: `translateY(${rise - leave * 100}%)` })
+    el.style.clipPath = `inset(0 0 ${rise}% 0)`
   })
 }
 boot(render)
