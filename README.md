@@ -30,6 +30,8 @@ Every frame is a pure function of time, rendered by headless Chrome (or Remotion
 
 Copy or clone this folder into your agent's skills directory, for example `~/.claude/skills/product-film/` for Claude Code. Then ask for a video ("make a 20 s launch teaser for our new feature") or invoke `/product-film`.
 
+Start a new film at high reasoning effort (`/effort xhigh` in Claude Code, or `max` when the first seconds have to carry a launch); medium is enough for re-renders and small fixes. The skill leaves `effort` out of its frontmatter on purpose: a frontmatter level overrides the session's, so it would also pull a `max` session down to it.
+
 ## Layout
 
 | Path | What it holds |
