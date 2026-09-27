@@ -15,6 +15,7 @@ Idea: <the premise the user picked, in one line, and its opening image>.
 Ingredients (from the interview): <brand element> · <how words appear> · <how scenes connect> · <extras>.
 The product's screens use only its own surfaces, colors, borders and effects. The idea's world and any featured partner bring their own look.
 Banned: <from BRAND.md, plus anything the product's language does not use, words the product avoids, false claims>.
+Claims: <what the product does and never does, as the user states it>.
 </direction>
 
 <voice>
@@ -30,21 +31,13 @@ v2 (at ~4.5 s): "<line>"   lands: "<word>" -> <...>
 </cast>
 
 <beat-sheet>
-Energy curve: <hook> -> <build> -> PEAK at <time, word> -> <ride> -> <landing>. The peak gets the drop, the biggest hit, the biggest scale change and the accent color at once.
-| Time | Bar or word | On screen | Camera (zoom, move) | Heard |
+Energy: <the curve you chose, and where the peak is>.
+| Time | Bar or word | On screen | Camera | Heard |
 |---|---|---|---|---|
-| 0.0 | frame 0 (the cover) | <a clean still that names the subject, readable at 300 px> | <framed on the subject, whole> | |
-| 0.05 | bar 1 | <motion starts at once> | <e.g. snap back to wide> | <music intro, texture> |
-| | v1 "<word>" | <...> | <creep 1.0 -> 1.3> | <riser into the peak> |
-| **PEAK** | <word> | <...> | <snap to 3x, shake> | <drop, impact + sub> |
-| | | <end card> | <slow push, a second reveal on the next bar> | <final hit> |
+| 0.0 | frame 0 (the cover) | <a still that names the subject> | <...> | |
+| | | <...> | <...> | <...> |
 </beat-sheet>
 
-<gotchas>
-Text never travels across text. Keep a slot for every word before it lands. A texture under words stays thin there; behind UI it stays calm. If the film loops, the last frame equals frame 0. Judge the encoded file, and decode its pixels.
-<Product claims: what needs a human approval step on screen, what the product never does.>
-</gotchas>
-
 <start>
-Before any scene code, show the chosen idea, the beat sheet (and the voice script, read aloud once for fit) and three style frames: the opening, one feature scene, the strongest moment. Wait for OK.
+Before any scene code, show the chosen idea, the beat sheet (and the voice script, read aloud once for fit), style frames of the opening and one key scene, and a motion test of the peak. Wait for OK.
 </start>

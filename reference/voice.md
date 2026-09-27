@@ -11,13 +11,13 @@ Only if the interview chose a voiceover. Once there is a voice, it leads the tim
 - **Copy review:** run the product's copy rules over the script. If the `human-copy-review` skill is installed, run it on the script and on every on-screen word before generating.
 - **Picture first:** mark each line with the moment it has to land on (for example "'reconciled' lands as the row turns green"). These marks become `wordAt` cues.
 
-## 2. Pick the voice (always ask)
+## 2. Pick the voice
 
 ```bash
 python3 $SKILL/scripts/eleven.py voices
 ```
 
-Ask in the interview every time, with AskUserQuestion. Put cloned and professional voices first, and offer BRAND.md's last-used voice as the first option, marked as last used. Write the choice to `film.json` `voice.voice_id` (plus `model_id`, default `eleven_multilingual_v2`) and to BRAND.md.
+The interview asks for it (interview.md). Write the choice to `film.json` `voice.voice_id` (plus `model_id`, default `eleven_multilingual_v2`) and to BRAND.md.
 
 ## 3. Generate with word timings
 
@@ -36,7 +36,7 @@ python3 $SKILL/scripts/eleven.py tts --only v3 --force   # redo one take
 
 ## 4. Place the lines and key the picture to words
 
-- Set each line's `at` so its mark lands on its moment. Leave 0.3 to 0.6 s of air between lines, and start the first line after the opening has moved (about 1 s).
+- Set each line's `at` so its mark lands on its moment, with a breath between lines (a few tenths of a second is a starting point) and the first line after the opening has moved.
 - In `render`, a moment that belongs to a word reads `wordAt(film, 'v2', 'reconciled')`. `wordAt` fails if the word disappears from the script, so an edit cannot silently break sync.
 - The picture leads the word slightly: a visual that illustrates a word lands 0.1 to 0.2 s before or on the word, never after it.
 - Words on screen never compete with the voice. Either punchlines repeat the key phrase at the moment it is said, or the screen carries UI only. There are no captions saying something different from the voice.
@@ -45,6 +45,4 @@ python3 $SKILL/scripts/eleven.py tts --only v3 --force   # redo one take
 ## 5. With music
 
 - Compose or cut the music after the voice is placed, to the film's real duration (music.md).
-- `mix.py` dips the music by `music.duck_db` (default -9 dB) under every line, with a 0.15 s attack and a 0.4 s release. Raise the music between lines only if it has room.
-- Put the music's big moments (the drop, a hit) in gaps between lines, not under a key word.
-- Sound effects under the voice stay at -14 dB or quieter.
+- `mix.py` ducks the music under every line (its defaults are in the script). Put the music's big moments in gaps between lines, not under a key word, and keep sound effects under the voice quiet.

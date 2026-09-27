@@ -68,13 +68,19 @@ python3 $S/eleven.py sfx --text "soft UI click, dry, close" --seconds 0.5 --out 
 Sound design carries as much of the energy as the picture. Layer it like a trailer, not a UI demo:
 - **Into the peak:** a riser that ends just before it, then a beat of near-silence (a pre-hit stop) that nothing else plays through: end the riser before the hush and check `audio/bed.wav` there. A hush filled by a riser's tail makes the peak no louder than what came before, and `energy.py` will not find it.
 - **On the peak and the final hit:** an impact with sub bass, stacked with the moment's own sound (a clack, a stamp, a click).
-- **On every camera move:** a whoosh sized to the move (an airy whip for a pan, a heavy one for a big zoom).
+- **On the moves that matter:** a whoosh sized to the move. On every move it becomes the stock whoosh-and-ding look.
 - **A texture bed** from the idea's world (flaps clattering, a crowd, keys) under the build and the ride.
 - **UI sounds** (clicks, pings, chimes) stay short and dry, one per meaningful event.
 Generate a small set once (`riser`, `impact`, `whip`, `texture`, `click`) and reuse them; vary gain, not files.
 - In `film.json` `sfx`, `hit` is the moment the transient should land. `mix.py` finds each clip's peak and starts it at `hit - peak`.
-- Gain -10 dB by default, -14 dB or quieter under the voice. Impacts on the peak and the final hit can go to -6 dB.
 - The music's drop and the picture's peak are the same frame. After generating, check the per-bar loudness from `beats.py`; if the drop missed, cut on bars (C) so it lands.
+
+## Traps
+
+- **Chunk `text` is sung.** Direction written there comes back as a second voice; keep it to the tag and put direction in `positive_styles` (`eleven.py music` guards and checks this).
+- **Sections must be 3 s or longer**, or the request fails.
+- **Generated length and section timing drift:** a bare prompt once returned 96 s for 30 s, and a plan keeps the total but not where sections change. Measure, then cut on bars.
+- **Compressor make-up gain can push the bed past 0 dBFS**, so every loud beat hits the limiter. Leave it off, or cap the bed with a limiter. When the limiter works hard, `mix.py` says when the mix peaks and which sources are hottest.
 
 ## The mix
 

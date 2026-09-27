@@ -7,15 +7,15 @@ compatibility: Needs Node 20+ with pnpm, Python 3 with uv, ffmpeg, and Google Ch
 
 # Product film
 
-A film that looks like the product made it: its colors, type, components, logo and voice, cut to a voiceover, music and sound design, with the energy of a real launch film. Forked from Rieranthony/product-film-skill (MIT, see LICENSE); this fork adds the HTML engine, the Remotion gate, ElevenLabs sound, the energy plan and the measured checks.
+A film that looks like the product made it: its colors, type, components, logo and voice, cut to a voiceover, music and sound design, with the energy of a real launch film.
 
 **Paths.** `$SKILL` is this skill's folder (`${CLAUDE_SKILL_DIR}` in Claude Code). Films live outside any repo, by default in `~/Films/<product>/<film>/`, with one `~/Films/<product>/BRAND.md` shared by all of a product's films. Use another folder if the user prefers one.
 
 ## Principles
 
 - **Their design wins on their product.** The product's UI, colors, type and copy come from its code and rules, because the film is judged against the real product. Around it the film is free: an idea can bring its own world (a format, a setting, props, a borrowed type), and a partner the film features appears in its own official identity next to the product's.
-- **Dynamic and exciting for its type, every time.** A film that is correct but flat has failed, whatever the type: a calm walkthrough still has one clear peak, motion on every phrase and no dead stretch. Run the energy check before any handoff ([reference/review.md](reference/review.md)), say plainly if a draft is flat, and fix it before asking for notes.
-- **The user decides what goes in.** What the film shows, how it sounds (ask about the voice every time) and which engine builds it are their call ([reference/interview.md](reference/interview.md)). Offer options drawn from their code and brand; generic options produce generic films.
+- **Energy that fits the type.** A film that is correct but flat has failed: even a calm walkthrough has one clear peak and no stillness it doesn't want. Measure and watch before handing off ([reference/review.md](reference/review.md)), and say plainly what you would still call flat.
+- **The user decides what goes in.** What the film shows, how it sounds and which engine builds it are their call ([reference/interview.md](reference/interview.md)). Offer options drawn from their code and brand; generic options produce generic films.
 - **Every frame is a pure function of time.** No CSS transitions or keyframes, no timers, no `Date.now()`, no state carried between frames, so any frame renders the same cold or in sequence and parallel renders agree. A component that runs its own clock gets a frame-driven twin.
 - **Measure instead of guessing.** Word times come from the voice alignment, beats from the audio, positions and text boxes from the DOM, energy from the rendered draft, colors and loudness from the decoded final files.
 - **Honest claims, as the user states them.** Show and say only what the product does. Find its claims rules and approved lines before writing. Take the user's claims, dates, partner permissions and legal clearance as given; they did that homework, so don't gate the film on sign-offs or proof. If a copy-review skill is installed, run the script and on-screen words through it.
@@ -28,15 +28,15 @@ Stop for the user at: the interview, the story checkpoint, anything that spends 
 ## Workflow
 
 1. **Quick discovery.** Just enough to ask good questions: rules files, tokens, components, the logo (and any mascot), the landing page, the main features. Reuse BRAND.md if it exists. See [reference/discovery.md](reference/discovery.md).
-2. **Interview.** Round 1 covers the film type, the brief and the engine gate, round 2 the sound (voice, music, SFX), round 3 the ingredients. See [reference/interview.md](reference/interview.md).
+2. **Interview.** The film type, the brief and the engine gate, then the sound (voice, music, sound design). Ingredients come later, with the ideas. See [reference/interview.md](reference/interview.md).
 3. **Brand kit → `BRAND.md`.** Finish discovery on what they chose, and fill [templates/BRAND.md](templates/BRAND.md).
 4. **Set up the film folder** for the chosen engine:
    - HTML (default): [reference/engine-html.md](reference/engine-html.md). Copy `templates/html/` and run `pnpm install`.
    - Remotion (gate passed): [reference/engine-remotion.md](reference/engine-remotion.md).
-5. **Idea, then story → `film-prompt.md`.** Name one or two reference films, then pitch 2 or 3 ideas before any beat sheet. Read [reference/story.md](reference/story.md) (it has a shape per film type) and [reference/ingredients.md](reference/ingredients.md), then fill [templates/film-prompt.md](templates/film-prompt.md). With a voice, write the script first ([reference/voice.md](reference/voice.md)). Plan the energy curve and a camera entry for every beat. Checkpoint with the user: the chosen idea, the beat sheet, the script, 2 style frames and a motion test of the peak with sound.
+5. **Idea, then story → `film-prompt.md`.** Name one or two reference films, then pitch 2 or 3 ideas before any beat sheet. Read [reference/story.md](reference/story.md) (it has a shape per film type) and [reference/ingredients.md](reference/ingredients.md), then fill [templates/film-prompt.md](templates/film-prompt.md). With a voice, write the script first ([reference/voice.md](reference/voice.md)). Checkpoint with the user: the chosen idea, the beat sheet with its energy and camera plan, the script, style frames and a motion test of the peak with sound.
 6. **Sound.** Voice: `scripts/eleven.py tts`, then place the lines in `film.json`. Music: composed or cut, then `scripts/beats.py` for the grid. Sound design: `eleven.py sfx`. Then `scripts/mix.py`. See [reference/voice.md](reference/voice.md) and [reference/music.md](reference/music.md).
 7. **Scenes.** Build them keyed to words, cues and the grid, per the engine reference.
-8. **Review loop.** Stills at every handoff, then a draft with sound, then `scripts/energy.py`, the energy check and a fresh-eyes critic that has not seen the build (`scripts/critic.py` + [reference/critic.md](reference/critic.md)), then fix and repeat, showing the user frames as you go. See [reference/review.md](reference/review.md).
+8. **Review loop.** Stills and the text check, then a draft measured with `scripts/energy.py` and watched with and without sound, a fresh-eyes critic on the first full draft, then fix and repeat, showing the user frames as you go. See [reference/review.md](reference/review.md).
 9. **Final render, verify, deliver.** See [reference/render.md](reference/render.md): render with motion blur, look at the fastest moves in the encode, run `scripts/verify.py --script film.json`, then send the files and the verify output.
 
 ## Tools, and when each earns its place
@@ -47,17 +47,17 @@ Reach for these when the film calls for them, not by default; each one exists be
 - **Brandfetch** (`scripts/brandfetch.py <domain>`, free key): any partner the film features, in its official logos and colors, instead of hand-sourced files.
 - **More than one voice** (`voice_id` per line in `film.json`): dialogue, a control room, an interview. A radio `filter` on a line puts it on air.
 - **Generated footage** (Runway, Veo, fal.ai): the idea's world (a place, a texture, an establishing shot), played as a video clip seeked by `t`. Never the product's own screens, which it would get wrong and make into a false claim.
-- **The fresh-eyes critic** ([reference/critic.md](reference/critic.md)): before every handoff, as the checks' counterpart for what only a viewer notices.
+- **The fresh-eyes critic** ([reference/critic.md](reference/critic.md)): on the first full draft and the final, for what only a first-time viewer notices.
 
 ## Quality floor (whatever the type and ingredients)
 
 - **The product looks like itself.** Its screens use only its own surfaces, colors, borders and shades. An invented card background or tint is the fastest way to make a film look fake to the people who built the product.
 - **Readable at the delivery size.** Fewer words beat smaller words. Cut labels that restate the picture.
 - **Text stays whole and uncovered.** No cursor, chip or texture over it, and no camera crop: every hold fits the whole line being read, computed from the text's box with an edge margin and a zoom cap, and stays on the content so a low line doesn't pull empty space into the frame. Text doesn't cross other text in a move, and a line keeps every word's slot so it doesn't re-center while it builds.
-- **Frame 0 is a thumbnail.** Many players and feeds (chat apps, feeds with autoplay off) show the first frame as the video's cover. It reads as a still that sells the film at about 300 px: the subject whole and legible, no half-cropped labels or logos, nothing mid-flip or mid-blur. The motion starts on the frames right after.
+- **Frame 0 is the cover.** Chat apps and feeds with autoplay off show the first frame, not the uploaded poster, so it reads as a still that sells the film at about 300 px: the subject whole and legible, nothing half-cropped or mid-move. The motion starts right after. Every render prints a `cover (frame 0)` line to check it.
 - **Loading states keep their width.** Use the product's own loading pattern.
-- **The first draft is the bold one.** Notes tone a film down; they rarely build it up. Scale, speed and camera escalate toward one peak, and nothing repeats the same way twice.
-- **Something happens on every beat or phrase.** A bar where nothing moves reads as slow. `energy.py` finds the dead stretches; a settled end card counts.
+- **The first draft is the bold one.** Notes tone a film down; they rarely build it up.
+- **Something happens on every beat or phrase** unless the type wants calm. `energy.py` finds the still stretches; keep only the ones you can name a reason for.
 - **The picture meets the voice.** A moment tied to a word lands on it or just before. On-screen words say what the voice says.
 - **Scene boundaries land on bars or words.** A loop's last frame equals its first. A landing loop reads muted.
 - **Restraint belongs to the product's screens, not the film.** Keep effects the product never uses (glows, click rings, bouncy easing) off its UI unless the idea calls for them. Camera, pacing and sound can be as bold as the idea wants.
@@ -76,18 +76,13 @@ Reach for these when the film calls for them, not by default; each one exists be
 ## Traps that cost real time
 
 - **Color range.** Browser screenshots and Remotion frames are RGB. An untagged or wrongly read YUV encode lifts `#0a0a0a` to `#171717`, a gray box on a dark page. Both engines encode BT.709 limited range and tag the matrix, primaries and transfer. `verify.py` checks all the tags, and `--bg` decodes a frame to prove the colors.
-- **Music plans sing their text.** Direction written into a chunk's `text` comes back as a second voice. Tag only in `text`, direction in `positive_styles`; `eleven.py music` guards and checks this (music.md).
-- **Generated music drifts.** A bare prompt can come back at the wrong length (a 30 s request once returned 96 s), and a composition plan keeps the length but not where its sections change. Measure the result and cut on bars so the drop lands on the peak.
-- **The first frame is the cover, and the poster doesn't save you.** Chat apps and feeds with autoplay off show frame 0, not the uploaded poster. A hook planned as "close, moving, mid-action" once opened on a 4x macro of blank tiles with half-cropped labels: a cover nobody clicks. Plan frame 0 in the beat sheet, keep it a clean still that names the subject, and read the `cover (frame 0)` line every render prints; `verify.py` fails a blank or faded-in first frame.
-- **The text check only sees crops since this fix.** `film.mjs check` used to clip text to the stage before testing the frame edge, so a camera crop never showed up. It now tests the unclipped glyphs; run it at every hold and on frame 0.
+- **Generated music misses its marks** (length, section timing, sung direction): music.md has the traps and the fix, cutting on bars.
 - **Voice drift.** Timing scenes by hand to a clip breaks the first time the line is regenerated. Key moments to `wordAt(...)`, which fails loudly when a cue word disappears.
 - **ElevenLabs keys can lack permissions.** A restricted key fails with 401 `missing the permission <name>` on those calls only (`voices_read`, text to speech, music, sound effects). Name the missing permission to the user rather than debugging the script.
 - **The key may be set only for interactive shells.** An agent's tool shell is usually non-interactive and skips `~/.zshrc` or `~/.bashrc`. If `eleven.py` says the key is not set, run it through an interactive shell (`zsh -ic '…'`) and suggest moving the export to `~/.zshenv` or `~/.profile`.
 - **GSAP `from` and `fromTo` draw their start state at time 0.** A pop added for a later moment (a clock that bumps on each count) showed its scaled-up start in frame 0 and cropped the cover. Give such tweens `immediateRender: false`; keep the default only for entrances that should be hidden until they play.
 - **Loose GSAP tweens run on GSAP's own clock.** Put every tween on the one paused timeline, and create anything a tween needs (SplitText, generated nodes) once at boot, never inside `render(t)`.
 - **Lottie's time argument is milliseconds.** `lottieClip` seeks by frame to avoid it.
-- **ElevenLabs music sections must be 3 s or longer**, or the request fails.
-- **Compressing the music with make-up gain can push it past 0 dBFS**, so every loud beat hits the limiter. Leave make-up gain off, or cap it with a limiter; `mix.py` names the hottest sources when the limiter works hard.
 - `interpolateColors` (Remotion) and hand-written tweens cannot mix `color-mix()`. Any color that animates is a hex token (kit `mixHex`).
 - Async images (Radix or base-ui avatars, lazy `<img>`) can render empty in a frame. HTML: `boot()` waits for `img.decode()`; keep images in the initial DOM. Remotion: use `<Img>`.
 - Springs that retarget: sum one closed-form step per key, with keys sorted by time.

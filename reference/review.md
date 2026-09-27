@@ -1,82 +1,42 @@
-# Review loop: look at frames, fix, repeat
+# Review loop: look, measure, fix, repeat
 
-Stills are cheap; renders are not. Review in this order.
+Stills are cheap; renders are not.
 
-## 1. Stills at the moments that matter
+## 1. Stills and the text check
 
 ```bash
 node film.mjs stills out/review/v3 0.5 4.2 9.4 14.0 21.5        # HTML engine: seconds; also writes sheet.png
 node film.mjs measure 9.4                                         # target boxes, for moves and cursor stops
+node film.mjs check 0 4.2 9.4 14.0 --view 390                     # text too small at phone width, covered, overlapping or cropped
 node scripts/stills.ts out/review/v3 30 252 564 --composition MyFilm [--debug]   # Remotion: frames at 60 fps
 ```
 
-- Pick the times from the beat sheet: every scene's first settled frame, every handoff, every key word.
-- Look at full resolution for anything with small text, and at the sheet for rhythm and consistency.
+- Take stills at every scene's first settled frame, every handoff and every key word; look at full resolution for small text and at the sheet for rhythm.
+- `check` is a report, not a rule: run it at holds and on frame 0 (mid-move frames flag on purpose), and judge each finding. A background wall of tiny text may be the idea; a cropped or covered line being read never is.
+
+## 2. A draft, measured, then watched
 
 ```bash
-node film.mjs check 4.2 9.4 14.0 21.5 --view 390      # HTML engine
+node film.mjs render draft --scale 0.5
+uv run --with numpy --with imageio-ffmpeg python3 $SKILL/scripts/energy.py out/draft/draft.mp4 [--dead 0.6] [--span 1.5]
 ```
 
-- A check, not a rule: it lists text that would be smaller than `--min` px (default 10) at the width people watch at (`--view`, about 390 for a phone feed, wider for a landing page), text partly covered by something painted over it, text overlapping other text, and text running off frame. Hidden text (clipped, or under a whole layer) is skipped. It saves `out/check/<t>-view.png` at the viewing width to look at.
-- Run it at settled frames; mid-move frames flag on purpose. Judge each finding: a background wall of tiny text may be the idea, a covered label never is.
+- Every render prints a `cover (frame 0)` line and saves the cover at thumbnail size: look at it.
+- `energy.py` prints the energy curve, still stretches and loud hits that land on a still picture. Its defaults suit a punchy social cut; raise `--span` for types that want calm (a landing loop, an explainer's diagram). Fix each finding or name why the stillness stays. Compare drafts on mean motion and still seconds.
+- Then watch the draft once with sound and once muted, at 1x, at phone size, and ask whether you would stop scrolling. Look for where it sags, whether the peak is clearly the biggest moment, whether moves repeat until they feel like a template, whether key words act themselves out ("faster" moving fast), and whether the camera ever makes a nudge instead of a decision (under about 20% zoom or a line's height reads as a mistake).
+- When you hand off, say plainly what you would still call flat, and what you did about it.
 
-## 2. A draft, then a contact sheet
+## 3. Fresh eyes on the first full draft and the final
 
-```bash
-node film.mjs render draft --scale 0.5                    # -> out/draft/; or: npx remotion render src/index.ts MyFilm out/draft/draft.mp4 --scale=0.5
-ffmpeg -v error -y -i out/draft/draft.mp4 -vf "select='not(mod(n\,24))',scale=240:135,tile=9x15:padding=4:color=0x333333" -frames:v 1 -fps_mode vfr out/review/contact.png
-```
+Checks cannot say "that empty band looks wrong". A reviewer who has not watched the build can: pack the film with `critic.py` and give it, with [critic.md](critic.md), to a new subagent that gets nothing from the build conversation. Run it on the first full draft and on the final, not after every change. Fix the high findings or say why they stay, and show the user the verdict and scores.
 
-- Watch the draft with sound once, from start to finish, as a viewer. Pacing problems only show up in motion.
-- For a handoff, render a slice at full quality: `node film.mjs render handoff --from 9 --to 10.5`.
+## 4. Things no check catches
 
-## 3. The energy check, before every handoff
-
-Measure first, then watch:
-
-```bash
-uv run --with numpy --with imageio-ffmpeg python3 $SKILL/scripts/energy.py out/draft/draft.mp4
-```
-
-It prints the energy curve, every dead stretch (more than 1.5 s of stillness, end cards included) and every loud hit in the music and SFX that lands on a still picture. Fix each finding or say why it stays. Compare drafts by mean motion and dead seconds; a new draft should not lose on both.
-
-Then watch the draft muted at 1x on a phone-sized window and ask: would I stop scrolling for this? If the honest answer is "it's fine", it is flat. Then check:
-
-- **Camera:** it changes scale at least three times (macro, wide, push, whip). A camera that only drifts reads as a slideshow. Every move is decisive: a nudge (under ~20% zoom or a line's height) reads as a mistake. Merge it into one hold that frames both lines, or make it a real move.
-- **Escalation:** each scene is bigger, faster or closer than the last. The same transition repeated three times is a template, not a film.
-- **One peak:** the strongest moment gets everything at once: the music's drop, the biggest hit, the biggest scale change, the brand color flooding. Plan the music so the drop lands on it (music.md), don't hope.
-- **Words act themselves out:** "faster" moves fast, "sharper" snaps into focus, "live" switches on. A key word that looks like every other word is a missed moment.
-- **Contrast:** stillness before the peak, speed after it. Big against small, dark against the brand color.
-- **Frame 0 and the ending:** every render prints a `cover (frame 0)` line and saves `<name>-cover-300.png`. Look at it: would someone click it? The subject is whole and readable, and the line reports nothing cropped, covered or mid-move. The first second then moves. The ending lands on a hit; it doesn't fade in politely.
-
-Name what's flat when you hand off, with the fix you made or propose. Never hand off a draft you'd call flat.
-
-## 4. Fresh eyes, before every handoff
-
-Checks measure; they cannot say "it feels flat" or "that empty band looks wrong". A reviewer who has not watched the build can. Pack the draft with `critic.py` and hand it to a fresh reviewer with the prompt in [critic.md](critic.md): a new subagent that gets the prompt and the folder, and nothing from the build conversation. Fix each high finding, or say in the handoff why it stays, and show the user the verdict and scores next to your own energy check. After a round of fixes, use a new reviewer; one that saw the last draft is no longer fresh.
-
-## 5. The checklist, every round
-
-- **Background:** one color. No invented shades. Surfaces only where the product has them.
-- **Borders:** none around floating elements. Lines only where they mean something.
-- **Text:**
-  - above everything, readable at 1080p, never off frame
-  - never cropped by a camera push: run `check` at every camera hold, not only at wide frames
-  - never covered by a cursor or chip
-  - never crossing other text in a move
-  - never re-centering while it builds
-- **Words:** fewer. Anything that restates the picture goes. Brand names have their logos.
-- **Loading states:** buttons keep their width.
-- **Textures:** calm behind UI, thinned behind words.
-- **Pacing:** something happens on every beat. No dead bar. Nothing too fast to read.
-- **Energy:** the energy check above passes.
-- **Handoffs:** each lands exactly on its destination (debug-measured).
-- **Brand element (if any):** on brand, alive from the first second, nothing showing through its cut-outs.
-- **Loop:** the last frame equals frame 0 (decode and compare).
 - **Stray layers:** one still per scene; nothing from another scene shows through (empty tiles, a faded card).
-- **Voice:** every keyed moment lands on or just before its word; no on-screen words fight the voice; the music never buries a key word.
-- **Claims:** only what the product does, as the user states it.
+- **Handoffs:** each magic move lands exactly on its destination (measured).
+- **Loops:** the last frame equals frame 0 (decode and compare).
+- **Fast moves in the final encode:** motion blur can smear text on a whip (render.md).
 
-## 6. Show the product owner
+## 5. Show the product owner
 
 Send frames or a draft as soon as a round is coherent. Their notes come fast and precise ("remove the borders", "same background", "it's slow here"). Fold every note into BRAND.md or the prompt, so the next film starts from it.
