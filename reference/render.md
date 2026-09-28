@@ -48,6 +48,7 @@ If the background comes back lighter (#171717 for #0a0a0a), the color range was 
 ## Deliver
 
 - Before the next render, copy the deliverables into `out/v<N>/`. Keep every version.
+- A version you may have to rebuild keeps its sources beside the video: `film.json`, `index.html` and `audio/vo/`, because the next `tts` overwrites the takes. A take lost that way can come back from the ElevenLabs history (`GET /v1/history`, then `/v1/history/<id>/audio`); time it again with `eleven.py align <line> <file>`.
 - Send the version with sound for review, the muted file for a landing page, and the WebM and poster when asked. Add a two-line caption of what changed.
 - Report durations, sizes and the verify output, verbatim.
 - Do not publish, upload or commit anything unless asked.

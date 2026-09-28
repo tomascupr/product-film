@@ -56,6 +56,7 @@ Use these where a word or moment asks for them, so the motion says something:
 - **The handoff:** generate between two of the film's own stills (`gen.py video --first ... --last ...`, engine-html.md). The shot then starts on the frame a coded scene stops on and ends on the frame the next scene starts from. Cut exactly at those times, and hold both sides still for a moment. In a 4 s test the shot's first and last frames were 1.4 of 255 from the stills, and neither cut showed.
 - A generated shot plays like a cut to another camera, at its own 24 fps. Put words in the DOM above it, where `check` can read them.
 - Render a 3D object with a transparent background, so it sits on the film's own background.
+- A small shape forgives a generated shot: inside a ring about 270 px across, its odd details and fake lettering don't read. Graded with `filter: saturate(.6) brightness(.5)`, busy footage kept white labels legible on top.
 
 ## Brand texture
 
