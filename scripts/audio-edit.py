@@ -1,11 +1,14 @@
-"""Cut a film's music out of a song, on the song's bar grid.
+"""Cut a film's music out of a song on the song's bar grid, and place the pieces on the film's clock.
 
     uv run --with numpy --with imageio-ffmpeg python3 audio-edit.py edit.json
 
-Segments are song bars, so every cut lands on a downbeat and the film's beat
-grid runs straight through the joins. Bars are beats.json bar indexes
-(0 = the first downbeat); `toBar` is exclusive; `beatsPerBar` defaults to 4. Each cut gets a 5 ms fade so nothing
-clicks; the end fades out.
+Run it from the film folder. Segments are song bars, so every cut lands on a downbeat. Bars are
+beats.json bar indexes (0 = the first downbeat); `toBar` is exclusive; "start" and "end" are the
+song's very beginning and end; `beatsPerBar` defaults to 4. A segment follows the one before it,
+so the grid runs straight through the join, unless it carries a film time (seconds or a film.json
+cue name): "at" plays its first sample then, and "endAt" ends it then, its start trimmed so it
+fits after the segment before. A gap before a placed segment is silence. List a segment twice to
+loop its bars. Each cut gets a 5 ms fade so nothing clicks; the end fades out.
 """
 
 import json
@@ -29,24 +32,48 @@ def decode(path):
     return np.frombuffer(out, dtype=np.int16).reshape(-1, 2).astype(np.float32) / 32768.0
 
 
+def film_time(value):
+    """Seconds, or a film.json cue name."""
+    if not isinstance(value, str):
+        return value
+    cues = json.load(open("film.json")).get("cues") or {}
+    if value not in cues:
+        sys.exit(f'"{value}" is not a cue in film.json (cues: {", ".join(cues) or "none"})')
+    return cues[value]
+
+
 def main():
     edit = json.load(open(sys.argv[1]))
     song = decode(edit["source"])
     bar = 60 / edit["bpm"] * edit.get("beatsPerBar", 4)
 
-    def at(value):
-        return 0.0 if value == "start" else edit["firstDownbeat"] + value * bar
+    def sample(value):
+        seconds = {"start": 0, "end": len(song) / SR}[value] if isinstance(value, str) else edit["firstDownbeat"] + value * bar
+        return int(round(seconds * SR))
 
-    pieces = []
-    for segment in edit["segments"]:
-        piece = song[int(round(at(segment["fromBar"]) * SR)): int(round(at(segment["toBar"]) * SR))].copy()
-        ramp = np.linspace(0, 1, FADE)[:, None]
-        if pieces:
+    film = np.zeros((0, 2), np.float32)
+    ramp = np.linspace(0, 1, FADE)[:, None]
+    for number, segment in enumerate(edit["segments"], 1):
+        if "at" in segment and "endAt" in segment:
+            sys.exit(f"segment {number}: use at or endAt, not both")
+        lo, hi = sample(segment["fromBar"]), sample(segment["toBar"])
+        start = int(round(film_time(segment["at"]) * SR)) if "at" in segment else len(film)
+        end = start + hi - lo
+        if "endAt" in segment:
+            end = int(round(film_time(segment["endAt"]) * SR))
+            start = max(len(film), end - (hi - lo))
+            lo = hi - (end - start)
+        if start < len(film) or end <= start:
+            sys.exit(f"segment {number} is empty or overlaps the one before it, which ends at {len(film) / SR:.3f} s")
+        piece = song[lo:hi].copy()
+        if start:
             piece[:FADE] *= ramp
         piece[-FADE:] *= ramp[::-1]
-        pieces.append(piece)
+        film = np.concatenate([film, np.zeros((start - len(film), 2), np.float32), piece])
+        print(f"  bars {segment['fromBar']} to {segment['toBar']}: film {start / SR:.3f} to {len(film) / SR:.3f} s"
+              + (f" (from {lo / SR:.3f} s of the song)" if "endAt" in segment else ""))
 
-    film = np.concatenate(pieces)[: int(round(edit["duration"] * SR))]
+    film = film[: int(round(edit["duration"] * SR))]
     fade = int(edit.get("fadeOutSeconds", 0) * SR)
     if fade:
         film[-fade:] *= np.linspace(1, 0, fade)[:, None] ** 2
@@ -56,7 +83,7 @@ def main():
         handle.setsampwidth(2)
         handle.setframerate(SR)
         handle.writeframes((np.clip(film, -1, 1) * 32767).astype(np.int16).tobytes())
-    print(f"{edit['out']}: {len(film) / SR:.3f} s from {len(pieces)} segments")
+    print(f"{edit['out']}: {len(film) / SR:.3f} s from {len(edit['segments'])} segments")
 
 
 if __name__ == "__main__":

@@ -7,14 +7,19 @@ energy.py reads it to find the sound's big hits without mistaking words for them
 
 Reads, from film.json in the current folder:
     duration
-    music: {file, from: 0, gain_db: 0, duck_db: -9, fade_in: 0, fade_out: 1.2}   (or null)
+    music: {file, from: 0, gain_db: 0, duck_db: -9, fade_in: 0, fade_out: 1.2, dips: []}   (or null)
     voice.lines: [{id, at, gain_db?}]      clips from audio/vo/<id>.mp3 (eleven.py tts)
-    sfx: [{file, hit, gain_db: -10}]       `hit` is when the transient lands: the clip starts at hit - its peak
+    sfx: [{file, hit, offset: 0, gain_db: -10}]   `hit` is when the transient lands: the clip starts at hit - its peak
 
+A time (a hit, a dip's ends) is film seconds, a film.json cue name, or "lineId:word", the start of
+that word in the line ("v2:SAP#2" for its second time), matched as kit.js wordAt matches it.
 Ducking: the music dips by duck_db while any voice line plays (0.15 s attack, 0.4 s release).
+music.dips [[from, to, db], ...] dip it where no voice plays (0.4 s ramps outside from and to).
+music.stems {name: file} replaces music.file (each read from music.from), and music.duck_stems
+[names] ducks only those, so the drums keep driving under the voice.
 Loudness: measured with EBU R128, then one linear gain to --lufs (default -14, web and social) and a
 peak limiter at -1 dBFS, so ducking and dynamics stay exactly as mixed.
-Prints voice windows and warns on overlaps or lines that run past the end.
+Prints voice windows and resolved hits, and warns on overlaps or lines that run past the end.
 """
 
 import argparse
@@ -46,6 +51,32 @@ def place(bus, clip, start):
     a, b = max(start, 0), min(start + len(clip), len(bus))
     if b > a:
         bus[a:b] += clip[a - start: b - start]
+
+
+def plain(word):
+    """kit.js wordAt's normalisation: lower case, letters and digits only."""
+    return "".join(c for c in word.lower() if c.isalnum())
+
+
+def film_time(value, film):
+    """Film seconds from a number, a film.json cue name, or "lineId:word[#n]" (the word's start)."""
+    if not isinstance(value, str):
+        return value
+    if ":" not in value:
+        cues = film.get("cues") or {}
+        if value not in cues:
+            sys.exit(f'"{value}" is not a cue in film.json (cues: {", ".join(cues) or "none"})')
+        return cues[value]
+    line_id, word = value.split(":", 1)
+    word, _, nth = word.partition("#")
+    line = next((l for l in (film.get("voice") or {}).get("lines", []) if l["id"] == line_id), None)
+    if line is None:
+        sys.exit(f'"{value}": film.json has no voice line {line_id}')
+    words = json.load(open(f"audio/vo/{line_id}.json"))["words"]
+    hits = [w for w in words if plain(w["w"]) == plain(word)]
+    if len(hits) < int(nth or 1):
+        sys.exit(f'"{value}": "{word}" (#{nth or 1}) is not in voice line {line_id}: {" ".join(w["w"] for w in words)}')
+    return line["at"] + hits[int(nth or 1) - 1]["start"]
 
 
 def ramp(length, attack, release, windows):
@@ -89,37 +120,48 @@ def main():
 
     music = film.get("music")
     if music:
-        track = decode(music["file"])
-        offset = int(round(music.get("from", 0) * SR))
-        track = track[offset: offset + length] * gain(music.get("gain_db", 0))
-        peaks.append((level(track), f"music {music['file']}"))
-        if len(track) < length:
-            print(f"WARNING music ends {(length - len(track)) / SR:.2f} s before the film", file=sys.stderr)
-        envelope = np.ones(len(track))
+        stems = music.get("stems") or {"music": music["file"]}
+        ducked = music.get("duck_stems", list(stems))
+        if set(ducked) - set(stems):
+            sys.exit(f"music.duck_stems names {sorted(set(ducked) - set(stems))}, which music.stems lacks ({', '.join(stems)})")
+        envelope = np.ones(length)
         fade_in, fade_out = music.get("fade_in", 0), music.get("fade_out", 1.2)
-        t = np.arange(len(track)) / SR
+        t = np.arange(length) / SR
         if fade_in:
             envelope *= np.clip(t / fade_in, 0, 1)
         if fade_out:
             envelope *= np.clip((film["duration"] - t) / fade_out, 0, 1)
-        if windows:
-            duck = ramp(len(track), 0.15, 0.4, [(s, e) for s, e, _ in windows])
-            envelope *= duck + (1 - duck) * gain(music.get("duck_db", -9))
-        place(bus, track * envelope[:, None].astype(np.float32), 0)
-        place(bed, track * envelope[:, None].astype(np.float32), 0)
+        for start, end, db in music.get("dips", []):
+            dip = ramp(length, 0.4, 0.4, [(film_time(start, film), film_time(end, film))])
+            envelope *= dip + (1 - dip) * gain(db)
+        duck = ramp(length, 0.15, 0.4, [(s, e) for s, e, _ in windows])
+        duck = duck + (1 - duck) * gain(music.get("duck_db", -9))
+        offset = int(round(music.get("from", 0) * SR))
+        for name, path in stems.items():
+            track = decode(path)[offset: offset + length] * gain(music.get("gain_db", 0))
+            peaks.append((level(track), f"music {path}"))
+            if len(track) < length:
+                print(f"WARNING music {path} ends {(length - len(track)) / SR:.2f} s before the film", file=sys.stderr)
+            shaped = track * (envelope * (duck if name in ducked else 1))[:len(track), None].astype(np.float32)
+            place(bus, shaped, 0)
+            place(bed, shaped, 0)
 
     quiet = set()
     for effect in film.get("sfx", []):
+        offset = effect.get("offset", 0)
+        hit = film_time(effect["hit"], film) + offset
+        if isinstance(effect["hit"], str):
+            print(f"sfx {os.path.basename(effect['file'])} on {effect['hit']}" + (f" {offset:+g} s" if offset else "") + f": {hit:.3f} s")
         clip = decode(effect["file"])
         # A generated effect can come back nearly silent (seen: -55 and -80 dBFS); its gain can't rescue it.
         if level(clip) < -35 and effect["file"] not in quiet:
             quiet.add(effect["file"])
             print(f"WARNING {effect['file']} peaks at {level(clip):.0f} dBFS before gain: nearly silent. Regenerate or synthesize it", file=sys.stderr)
         clip = clip * gain(effect.get("gain_db", -10))
-        peaks.append((level(clip), f"sfx {os.path.basename(effect['file'])} at {effect['hit']} s"))
+        peaks.append((level(clip), f"sfx {os.path.basename(effect['file'])} at {hit:.2f} s"))
         peak = int(np.argmax(np.abs(clip).max(axis=1)))
-        place(bus, clip, int(round(effect["hit"] * SR)) - peak)
-        place(bed, clip, int(round(effect["hit"] * SR)) - peak)
+        place(bus, clip, int(round(hit * SR)) - peak)
+        place(bed, clip, int(round(hit * SR)) - peak)
 
     raw = bus.astype(np.float32).tobytes()
     base = [FF, "-v", "error", "-f", "f32le", "-ar", str(SR), "-ac", "2", "-i", "-"]
@@ -133,7 +175,8 @@ def main():
         sys.exit("the mix is silent: check film.json music, voice and sfx")
     lift = args.lufs - float(measured["input_i"])
     over = float(measured["input_tp"]) + lift + 1
-    chain = f"volume={lift:.2f}dB,alimiter=limit=0.891:attack=2:release=60:level=0,aresample={SR}"
+    # latency=1: without it the limiter's 2 ms lookahead delays the whole mix by 95 samples.
+    chain = f"volume={lift:.2f}dB,alimiter=limit=0.891:attack=2:release=60:level=0:latency=1,aresample={SR}"
     subprocess.run(base + ["-af", chain, "-c:a", "pcm_s24le", "-y", args.out], input=raw, check=True)
     bed_out = os.path.join(os.path.dirname(args.out) or '.', 'bed.wav')
     subprocess.run(base + ['-af', chain, '-c:a', 'pcm_s24le', '-y', bed_out], input=bed.astype(np.float32).tobytes(), check=True)
