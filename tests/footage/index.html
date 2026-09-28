@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>footage fixture</title><link rel="icon" href="data:,">
+<style>html, body { margin: 0; } #stage { position: relative; width: var(--w); height: var(--h); overflow: hidden; } #shot { position: absolute; left: 0; top: 0; }</style></head>
+<body><div id="stage"><img id="shot" alt=""></div>
+<script type="module">
+import { boot, footage } from './kit.js'
+const clip = footage(document.getElementById('shot'), 'footage/test')
+boot(t => clip.at(t, 0.25), { wait: [clip.ready] })
+</script></body></html>

@@ -97,6 +97,8 @@ Re-create a component when it:
 
 Copy the structure, class names and tokens; change only the clock. Write in the file which component it twins and why.
 
+Footage (gen.py's `clip.mp4`, a rendered shot) needs no twin: `<Video>` from `@remotion/media` is frame-perfect in renders per Remotion's docs (so is `<OffthreadVideo>`; `<Html5Video>` isn't guaranteed to be).
+
 ## An animated logo or mascot (only if chosen)
 
 - **One component, driven by `t`:** `<Mark t script size appearance="filled|outline" draw={0..1} />`.

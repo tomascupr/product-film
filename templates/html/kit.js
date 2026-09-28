@@ -209,6 +209,37 @@ export function lottieClip(lottie, container, path) {
  *  ticker: put every tween on a paused timeline. */
 export const gsapAt = (timeline, t, start = 0) => timeline.seek(Math.max(0, t - start), true)
 
+// ---------- footage and 3D renders, driven by t ----------
+/** An image sequence as a clip on the film's clock: generated footage (scripts/gen.py) or a 3D
+ *  render. `dir` holds 0001.jpg, 0002.jpg... and clip.json ({fps, frames, seconds, ext}). Add
+ *  `clip.ready` to boot's wait list; clip.fps, clip.frames and clip.seconds are set from then on.
+ *  clip.at(t, start, speed) shows the source frame for film time t, holding the first before `start`
+ *  and the last after the end; a 24 fps shot holds each frame across film frames, never interpolated.
+ *  It returns a promise that resolves once that frame is decoded: return it from render(t)
+ *  (Promise.all for several clips) and film.mjs waits for it before it takes the frame. */
+export function footage(img, dir) {
+  let shown = -1, loading
+  const clip = {
+    ready: fetch(`${dir}/clip.json`, { cache: 'no-store' })
+      .then(r => { if (!r.ok) throw new Error(`footage: no ${dir}/clip.json`); return r.json() })
+      .then(info => Object.assign(clip, info)),
+    at(t, start = 0, speed = 1) {
+      if (!clip.frames) throw new Error(`footage: ${dir}/clip.json is not loaded; add clip.ready to boot's wait list`)
+      // The epsilon: a film frame that lands exactly on a source frame (every 5th at 60 fps over 24)
+      // can compute as 1.9999... and would show the frame before.
+      const i = Math.min(clip.frames - 1, Math.max(0, Math.floor((t - start) * speed * clip.fps + 1e-6)))
+      if (i !== shown) {
+        shown = i
+        img.src = `${dir}/${String(i + 1).padStart(4, '0')}.${clip.ext ?? 'jpg'}`
+        // A newer frame replacing this one mid-decode (the #play preview) is not an error; a missing file is.
+        loading = img.decode().catch(() => { if (shown === i) throw new Error(`footage: could not decode ${img.src}`) })
+      }
+      return loading
+    },
+  }
+  return clip
+}
+
 // ---------- DOM ----------
 export const $ = id => document.getElementById(id)
 /** Set transform, opacity, blur and visibility on an element (or id) in one call. */

@@ -50,6 +50,13 @@ Use these where a word or moment asks for them, so the motion says something:
 - **A shape turning into another** (MorphSVG): a problem becoming a solution, one icon becoming the next.
 - **A snap with overshoot** (`back.out`, `expo.out`): status changes, stamps, a lockup landing.
 
+## Generated footage and 3D
+
+- **When it earns its place:** parts of the idea's world that code draws badly (a real place, weather, a material, a physical metaphor), or an object that needs real light and reflections (a 3D mark, a physical product). Never the product's own screens: a model redraws them wrong, and the film then makes a false claim. A 3D device mockup spinning in empty space is still a generic look.
+- **The handoff:** generate between two of the film's own stills (`gen.py video --first ... --last ...`, engine-html.md). The shot then starts on the frame a coded scene stops on and ends on the frame the next scene starts from. Cut exactly at those times, and hold both sides still for a moment. In a 4 s test the shot's first and last frames were 1.4 of 255 from the stills, and neither cut showed.
+- A generated shot plays like a cut to another camera, at its own 24 fps. Put words in the DOM above it, where `check` can read them.
+- Render a 3D object with a transparent background, so it sits on the film's own background.
+
 ## Brand texture
 
 - Only if the product has one (a pattern, a dither, a gradient, a grain), painted per frame in screen space: calm behind UI, thinned behind words.

@@ -16,11 +16,12 @@ No Google Chrome? Set `CHROME_PATH` to any Chromium binary. ffmpeg comes from PA
 | File | Role |
 |---|---|
 | `index.html` | The film: tokens and fonts in CSS, all layers in the DOM, `render(t, film)` in a module script |
-| `kit.js` | Time, easing, springs, magic moves, camera, cursor paths, dither, voice word lookup, `set()`, `boot()` |
+| `kit.js` | Time, easing, springs, magic moves, camera, cursor paths, dither, voice word lookup, footage, `set()`, `boot()` |
 | `film.json` | The data both the page and the audio scripts read: size, fps, duration, loop, grid, cues, voice lines, music, sfx |
 | `film.mjs` | `serve`, `stills`, `measure`, `check`, `render` |
 | `audio/` | `vo/`, `music.mp3`, `sfx/`, `mix.wav` (the scripts write these) |
 | `fonts/`, `img/` | Local copies of the product's fonts, logo SVGs and images. Nothing loads from the network at render time. |
+| `footage/`, `3d/` | Generated shots and 3D renders as frames plus `clip.json`, and the Blender scripts and HDRIs that make them |
 
 ## Rules for scene code
 
@@ -63,6 +64,88 @@ boot((t, film) => {
 - One paused timeline for the whole film, positioned on word times and cues. A second clock anywhere breaks the frame-exact render.
 - A tween that changes something already on screen (a pop, a bump) gets `immediateRender: false`, or its start state shows from frame 0.
 - Keep the page's purity check (render a time, render another, render the first again, compare): it catches a tween that escaped the timeline. `tests/thirdparty/run.sh` shows the same check for both libraries.
+
+## Footage and 3D renders
+
+A generated shot or a Blender render plays as an image sequence on the film's clock, not as a `<video>` seeked by `t`, so each film frame shows one decoded source frame, cold or in sequence. At 60 fps a 24 fps shot holds each frame for 2 or 3 film frames; nothing is interpolated. Never generate the product's own screens (ingredients.md).
+
+Generate between two of the film's own stills, so the shot starts where a coded scene stops and ends where the next one starts:
+
+```bash
+node film.mjs stills footage/in 4.0 8.0      # the frames the shot starts and ends on
+python3 $SKILL/scripts/gen.py video --prompt "..." --first footage/in/000.png --last footage/in/001.png --seconds 4 --out footage/<name>
+```
+
+- gen.py submits to fal.ai's queue (`FAL_KEY`), polls, downloads `clip.mp4` and writes every frame as a JPEG, plus `clip.json` (fps, frames, seconds, size, model, prompt, request id). Every run is paid, so it won't generate into a folder that has a clip unless you pass `--force`.
+- The endpoints it maps, at fal's September 2026 prices with audio off (gen.py turns it off): Kling v3 standard, the default, $0.084/s for 3 to 15 s; Kling v3 pro $0.112/s; Veo 3.1 fast first-last-frame $0.10/s and Veo 3.1 $0.20/s, for 4, 6 or 8 s. `--model` takes any fal endpoint and `--arg key=value` any field on its API page (`--arg resolution=1080p` costs the same as 720p on Veo).
+- A 4 s Kling v3 standard shot between two 1280x720 stills took 60 s. Its first and last frames differed from the stills by 1.4 of 255 on average (PSNR 41 dB), and the ball it moved landed within 1 px, so neither cut showed. It came back as 97 frames (4.042 s), not 96, so resume the coded scene at `start + clip.seconds`.
+- For a clip from elsewhere (a download, another generator), run `gen.py frames clip.mp4 --out footage/<name>`. Both commands read an untagged clip as BT.709 limited range. ffmpeg's own guess for an untagged clip is BT.601, which turned `#ffd400` into 248,223,9.
+
+```js
+import { boot, footage, set, $ } from './kit.js'
+const shot = footage($('shot'), 'footage/<name>')      // an <img id="shot"> in the DOM
+boot((t, film) => {
+  const { handoff } = film.cues, back = handoff + shot.seconds
+  set('shot', { vis: t >= handoff && t < back })       // the coded scenes hide in this window
+  return shot.at(t, handoff)                           // resolves once the frame is decoded
+}, { wait: [shot.ready] })
+```
+
+- `render(t)` may return a promise or be `async`, and film.mjs waits for it before it takes the frame. For several clips, `return Promise.all([a.at(t, 2), b.at(t, 9)])`. Without that wait, 1 in 24 stills of heavy 1080p frames showed the wrong frame.
+- Take the handoff stills before the shot goes into the page, and hold both sides of each cut still for a moment.
+- The shot is baked in: the camera can scale, crop and grade it, but it can't move into it.
+
+**3D renders.** Script the scene for Blender, render it headless to PNGs at the film's fps and size, and play them with `footage()` like any shot. Light it with a Poly Haven HDRI (CC0). Their API asks for a User-Agent that names your software:
+
+```bash
+mkdir -p 3d && curl -sfA product-film https://api.polyhaven.com/files/studio_small_09 \
+  | python3 -c "import json, sys; print(json.load(sys.stdin)['hdri']['1k']['hdr']['url'])" | xargs curl -sfA product-film -o 3d/studio_small_09_1k.hdr
+/Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup -P 3d/shot.py -a     # or `blender` on PATH
+```
+
+```python
+# 3d/shot.py (Blender 5.2): a chrome torus that spins for 1 s. Run from the film folder.
+import bpy, json, os
+FPS, FRAMES, W, H = 60, 60, 1280, 720             # the film's fps and size
+OUT = os.path.abspath('footage/torus')            # 0001.png, 0002.png... and clip.json
+
+bpy.ops.wm.read_factory_settings(use_empty=True)
+scene = bpy.context.scene
+cycles = bpy.context.preferences.addons['cycles'].preferences
+cycles.compute_device_type = 'METAL'
+cycles.get_devices()
+scene.render.engine, scene.cycles.device = 'CYCLES', 'GPU'
+scene.cycles.samples, scene.cycles.seed = 64, 7
+scene.render.fps, scene.frame_start, scene.frame_end = FPS, 1, FRAMES
+scene.render.resolution_x, scene.render.resolution_y = W, H
+scene.render.filepath = OUT + '/'
+scene.render.film_transparent = True              # the HDRI lights the object; the film's own background shows through
+
+scene.world = bpy.data.worlds.new('hdri')
+env = scene.world.node_tree.nodes.new('ShaderNodeTexEnvironment')
+env.image = bpy.data.images.load(os.path.abspath('3d/studio_small_09_1k.hdr'))
+scene.world.node_tree.links.new(env.outputs['Color'], scene.world.node_tree.nodes['Background'].inputs['Color'])
+
+bpy.ops.mesh.primitive_torus_add(major_radius=1, minor_radius=0.35, major_segments=96, minor_segments=32)
+bpy.ops.object.shade_smooth()
+torus = bpy.context.object
+gloss = bpy.data.materials.new('gloss')
+bsdf = gloss.node_tree.nodes['Principled BSDF']
+bsdf.inputs['Metallic'].default_value, bsdf.inputs['Roughness'].default_value = 1, 0.12
+torus.data.materials.append(gloss)
+torus.rotation_euler.x = 1.1
+# Motion as a function of the frame (a simple driver expression runs with scripts disabled).
+torus.driver_add('rotation_euler', 2).driver.expression = f'frame / {FPS} * 1.5'
+
+bpy.ops.object.camera_add(location=(0, -8, 0), rotation=(1.5708, 0, 0))
+scene.camera = bpy.context.object
+
+os.makedirs(OUT, exist_ok=True)
+json.dump({'fps': FPS, 'frames': FRAMES, 'seconds': FRAMES / FPS, 'size': [W, H], 'ext': 'png'}, open(OUT + '/clip.json', 'w'))
+```
+
+- On an M4 Max the torus took 1.6 s a frame, after about 2 min on the very first render while Metal compiled its kernels.
+- The fixed seed and the driver make each frame a function of its number, but Cycles on Metal isn't bit-exact between runs (at most 1 level, in 0.01% of pixels). Render a shot once and let the film play the files.
 
 ## Look and measure
 
