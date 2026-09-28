@@ -28,7 +28,11 @@ uv run --with numpy --with imageio-ffmpeg python3 $SKILL/scripts/energy.py out/d
 
 ## 3. Fresh eyes on the first full draft and the final
 
-Checks cannot say "that empty band looks wrong". A reviewer who has not watched the build can: pack the film with `critic.py` and give it, with [critic.md](critic.md), to a new subagent that gets nothing from the build conversation. Run it on the first full draft and on the final, not after every change. Fix the high findings or say why they stay, and show the user the verdict and scores.
+Checks cannot say "that empty band looks wrong" or "that word is hard to hear". Two reviewers who have not watched the build can ([critic.md](critic.md)). Run both on the first full draft and on the final, not after every change:
+- **The critic** looks: pack the film with `critic.py` and give it, with critic.md, to a new subagent that gets nothing from the build conversation.
+- **The watcher** listens too: `watch.py` sends the film itself to Gemini (`GEMINI_API_KEY`; the film is uploaded to Google's API). It judges what stills cannot: a word that is hard to make out, a hit before or after its picture, and whether the peak is the biggest moment in sound and picture together, and it times each finding to about a tenth of a second. It hears a 16 kbps mono reduction, so levels still come from `energy.py` and `verify.py`. Its silence is not a pass. In a blind test, three runs on two models missed a pause before the peak that the product owner heard as lag; one timed that pause to the tenth of a second and called it clean.
+
+Fix the high findings or say why they stay, and show the user both verdicts and scores.
 
 ## 4. Things no check catches
 
@@ -40,4 +44,4 @@ Checks cannot say "that empty band looks wrong". A reviewer who has not watched 
 
 ## 5. Show the product owner
 
-Send frames or a draft as soon as a round is coherent, and ask for one watch of the draft on a phone with the sound on: only a listener can say whether the mix is right. Their notes come fast and precise ("remove the borders", "same background", "it's slow here"). Fold every note into BRAND.md or the prompt, so the next film starts from it.
+Send frames or a draft as soon as a round is coherent, and ask for one watch of the draft on a phone with the sound on. The watcher hears a reduced copy and can miss a pause that drags (section 3), so how the mix plays on a real speaker and how the pauses feel are still theirs to judge. Their notes come fast and precise ("remove the borders", "same background", "it's slow here"). Fold every note into BRAND.md or the prompt, so the next film starts from it.
