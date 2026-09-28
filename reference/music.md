@@ -31,6 +31,7 @@ uv run --with numpy --with imageio-ffmpeg python3 $S/beats.py --drums audio/musi
 - Tempo comes from autocorrelation, refined by a comb. The downbeat is the bar position where the stems come and go.
 - Check `gridCheckMs.spread` (under 10 ms is good; `meanOffset` reads about -15 ms by design, against the smoothed onset curve). It shows the grid is steady, not that its phase is right, so listen once with clicks on the grid. `--bpm` skips the search, and `--meter 3` handles waltz time.
 - Copy `bpm`, `firstDownbeat` (as `firstBeat`, with `pickupBeats: 0`) and `beatsPerBar` into `film.json` `grid`.
+- A drop starts a section, so it lands on a downbeat. `beats.py` votes for the downbeat from where the stems change and where the kick hits, and on a composed track whose kick played every beat the vote came back one beat late: every bar index, and every cut on bars, was off by a beat. It warns when the biggest rise in the drums falls on another beat of the bar and prints the rerun that fixes it (`--downbeat <seconds>`, the drop's time). Before you cut on bars or place the peak, check that the drop's time is a bar start in `beats.json`.
 - Read the song map from the per-bar loudness it prints: intro, drops, breakdowns, the big hit, the outro. Map the story onto it: busy scenes on the full groove, the strongest moment on the drop, the end card on the ring-out.
 
 ### C. The user's licensed track: cut it on bars
@@ -77,6 +78,7 @@ Sound design carries as much of the energy as the picture. Layer it like a trail
 - **UI sounds** (clicks, pings, chimes) stay short and dry, one per meaningful event.
 Generate a small set once (`riser`, `impact`, `whip`, `texture`, `click`) and reuse them; vary gain, not files. Without a key, synthesize the set instead (D).
 - In `film.json` `sfx`, `hit` is the moment the transient should land. `mix.py` finds each clip's peak and starts it at `hit - peak`.
+- **Measure every generated effect before you place it.** Prompts that read fine have returned a marble clack peaking at -55 dBFS and a whoosh at -80 dBFS, which no gain setting rescues, and a riser that peaked before its end and trailed into the hush after it. Because `mix.py` places a clip by its peak, a peak in the wrong place moves the hit. Print each clip's length, its peak time and its level per 0.1 s (a few lines of numpy) before you choose its `hit`; regenerate or synthesize (D) any clip that comes back quiet, and trim a tail that would run into a planned silence. `mix.py` also warns about a nearly silent clip.
 - The music's drop and the picture's peak are the same frame. After generating, check the per-bar loudness from `beats.py`; if the drop missed, cut on bars (C) so it lands.
 
 ## Traps

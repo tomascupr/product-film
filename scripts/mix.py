@@ -108,8 +108,14 @@ def main():
         place(bus, track * envelope[:, None].astype(np.float32), 0)
         place(bed, track * envelope[:, None].astype(np.float32), 0)
 
+    quiet = set()
     for effect in film.get("sfx", []):
-        clip = decode(effect["file"]) * gain(effect.get("gain_db", -10))
+        clip = decode(effect["file"])
+        # A generated effect can come back nearly silent (seen: -55 and -80 dBFS); its gain can't rescue it.
+        if level(clip) < -35 and effect["file"] not in quiet:
+            quiet.add(effect["file"])
+            print(f"WARNING {effect['file']} peaks at {level(clip):.0f} dBFS before gain: nearly silent. Regenerate or synthesize it", file=sys.stderr)
+        clip = clip * gain(effect.get("gain_db", -10))
         peaks.append((level(clip), f"sfx {os.path.basename(effect['file'])} at {effect['hit']} s"))
         peak = int(np.argmax(np.abs(clip).max(axis=1)))
         place(bus, clip, int(round(effect["hit"] * SR)) - peak)

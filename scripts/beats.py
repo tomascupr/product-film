@@ -6,7 +6,8 @@
 
 Decodes with the ffmpeg shipped in imageio-ffmpeg. The onset envelope is the spectral flux of the drum stem. Tempo is
 the autocorrelation peak, refined by a comb over the whole song. Beat phase is
-the comb's best offset. The downbeat is the bar position with the most kick.
+the comb's best offset. The downbeat is the bar position with the most kick; it warns when the
+biggest rise in the drums (the drop) lands off a downbeat, and --downbeat <seconds> overrides the vote.
 It writes every beat, every bar start and each stem's loudness per bar, so a
 video picks its section from data instead of by ear.
 """
@@ -116,6 +117,7 @@ def main():
     parser.add_argument("--stem", action="append", default=[], help="name=path, measured per bar")
     parser.add_argument("--bpm", type=float, help="skip tempo search and use this tempo")
     parser.add_argument("--meter", type=int, default=4, help="beats per bar (3 for waltz time, 6 for 6/8 counted in eighths)")
+    parser.add_argument("--downbeat", type=float, help="seconds of a known downbeat (the drop, say): overrides the vote")
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
 
@@ -161,6 +163,18 @@ def main():
         for p in range(m)
     ]
     downbeat = int(np.argmax(bar_position_score))
+    # A drop starts a section, so it lands on a downbeat. When the biggest rise in the drums falls on
+    # another beat of the bar, the vote picked the wrong beat (seen on a composed track whose kick
+    # played every beat): say so, with the flag that fixes it.
+    drum_db = beat_db(drums)
+    rise = np.diff(drum_db, prepend=drum_db[0])
+    drop = int(np.argmax(rise))
+    warning = None
+    if args.downbeat is not None:
+        downbeat = int(np.argmin(np.abs(beats - args.downbeat))) % m
+    elif rise[drop] > 6 and (drop - downbeat) % m:
+        warning = (f"WARNING the biggest rise in the drums (+{rise[drop]:.1f} dB at {beats[drop]:.2f} s) lands on beat "
+                   f"{(drop - downbeat) % m + 1} of the bar, not a downbeat. If that is the drop, rerun with --downbeat {beats[drop]:.4f}")
     bar_starts = beats[downbeat::m]
 
     bars = []
@@ -204,6 +218,8 @@ def main():
     for bar in bars:
         cells = "  ".join(f"{bar['loudnessDb'][n]:>6}" for n in names)
         print(f"{bar['index']:>3}  {bar['start']:>6.2f}  {cells}")
+    if warning:
+        print(warning)
 
 
 if __name__ == "__main__":

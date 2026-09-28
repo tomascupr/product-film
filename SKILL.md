@@ -79,7 +79,9 @@ Reach for these when the film calls for them, not by default; each one exists be
 ## Traps that cost real time
 
 - **Color range.** Browser screenshots and Remotion frames are RGB. An untagged or wrongly read YUV encode lifts `#0a0a0a` to `#171717`, a gray box on a dark page. Both engines encode BT.709 limited range and tag the matrix, primaries and transfer. `verify.py` checks all the tags, and `--bg` decodes a frame to prove the colors.
-- **Generated music misses its marks** (length, section timing, sung direction): music.md has the traps and the fix, cutting on bars.
+- **Generated music misses its marks** (length, section timing, sung direction): music.md has the traps and the fix, cutting on bars. Its measured downbeat can also come back a beat late; `beats.py` warns when the drop lands off a bar start and prints the `--downbeat` rerun.
+- **Generated sound effects can come back nearly silent** or peak in the wrong place. Measure each clip before you place it (music.md); `mix.py` warns about a silent one.
+- **Four motion-blur subframes step on fast moves.** Whips, whole-frame shakes and spins show ghost copies; render them with `--blur 8` or `--blur 16` (render.md).
 - **Voice drift.** Timing scenes by hand to a clip breaks the first time the line is regenerated. Key moments to `wordAt(...)`, which fails loudly when a cue word disappears.
 - **ElevenLabs keys can lack permissions.** A restricted key fails with 401 `missing the permission <name>` on those calls only (`voices_read`, text to speech, music, sound effects). Name the missing permission to the user rather than debugging the script.
 - **The key may be set only for interactive shells.** An agent's tool shell is usually non-interactive and skips `~/.zshrc` or `~/.bashrc`. If `eleven.py` says the key is not set, run it through an interactive shell (`zsh -ic '…'`) and suggest moving the export to `~/.zshenv` or `~/.profile`.

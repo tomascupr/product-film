@@ -16,13 +16,13 @@ The output goes to `out/<name>/`: `<name>.mp4` with `audio/mix.wav`, `<name>-mut
 node scripts/render.ts <CompositionId> <name> --duration <s> --poster <s>
 ```
 
-It renders a 240 fps PNG master (H.264 CRF 8, 4:4:4, BT.709), blends 4 subframes into 60 fps motion blur with a full ffmpeg, and writes `out/<name>/`: `<name>-1080p60.mp4` (muted), `<name>-1080p60-audio.mp4` (with `audio/mix.wav`), `<name>-1080p60.webm`, `poster.jpg` and `loop-seam.png`. The master and the intermediate are deleted at the end.
+It renders a 60 x N fps PNG master (N subframes per frame, `--blur N`, 4 by default; H.264 CRF 8, 4:4:4, BT.709), blends the subframes into 60 fps motion blur with a full ffmpeg, and writes `out/<name>/`: `<name>-1080p60.mp4` (muted), `<name>-1080p60-audio.mp4` (with `audio/mix.wav`), `<name>-1080p60.webm`, `poster.jpg` and `loop-seam.png`. The master and the intermediate are deleted at the end.
 
 Both engines:
-- Motion blur means 4 subframes averaged per frame. Use it only for finals, since it takes 4x the render time. Run long renders in the background and review other things meanwhile.
+- Motion blur averages N subframes per frame: `--blur` alone is 4, `--blur 8` or `--blur 16` takes more. Four suits most moves. On a fast whip, a whole-frame shake or anything spinning, four show as distinct ghost copies (a stack of rings, doubled type) rather than a smear, so raise N for a film with those moves; 16 smoothed a camera whip and a spinning logo that 4 and 8 still stepped. Render time grows with N: use it for finals only, and run long renders in the background while you review other things.
 - Frame 0 must work as a cover on its own (review.md), because many players ignore the poster. Where a platform takes a custom thumbnail, upload the poster too.
 - The poster is a settled frame that states the message (the headline, the product name with its status), never a mid-effect frame and never frame 0.
-- After the blurred render, look at the encode's consecutive frames at the fastest moves (the strip in review.md, on `out/<name>/<name>.mp4`): motion blur can smear text on a whip.
+- After the blurred render, look at the encode's consecutive frames at the fastest moves (the strip in review.md, on `out/<name>/<name>.mp4`): motion blur can smear text on a whip, and too few subframes show as ghost copies.
 - The output is BT.709, limited range, and tagged as such.
 
 ## Verify before sending

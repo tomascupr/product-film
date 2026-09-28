@@ -6,7 +6,7 @@
 //   node film.mjs check <seconds>... [--view 390] [--min 10]
 //                                                     text too small at the viewing width, covered, overlapping
 //                                                     or off frame; out/check/<t>.png at that width to look at
-//   node film.mjs render <name> [--blur] [--scale 0.5] [--from s] [--to s] [--webm] [--poster s] [--muted] [--workers 4]
+//   node film.mjs render <name> [--blur [N]] [--scale 0.5] [--from s] [--to s] [--webm] [--poster s] [--muted] [--workers 4]
 //                                                     -> out/<name>/<name>.mp4 (+ -muted.mp4, .webm, -poster.jpg,
 //                                                        -cover-300.png: frame 0 at thumbnail size, with its text checked)
 //
@@ -14,7 +14,7 @@
 // by default), so each format of one timeline renders from one folder, in parallel under its own name.
 //
 // render: headless Chrome steps window.render(t) frame by frame and pipes PNGs into
-// ffmpeg. --blur renders 4 subframes per frame and averages them (motion blur, 4x slower).
+// ffmpeg. --blur renders N subframes per frame (4 by default) and averages them: motion blur, N times slower.
 // Colors: screenshots are sRGB; ffmpeg converts once to BT.709 limited range and tags it,
 // so dark backgrounds do not come back lifted. Muxes audio/mix.wav when it exists.
 import { chromium } from 'playwright-core'
@@ -190,8 +190,8 @@ if (cmd === 'serve') {
       if (total) process.exitCode = 1
     } else {
       const [name] = args
-      if (!name) throw new Error('usage: node film.mjs render <name> [--blur] [--scale 0.5] [--from s] [--to s] [--webm] [--poster s]')
-      const sub = flags.blur ? 4 : 1, scale = +(flags.scale ?? 1), workers = +(flags.workers ?? 4)
+      if (!name) throw new Error('usage: node film.mjs render <name> [--blur [N]] [--scale 0.5] [--from s] [--to s] [--webm] [--poster s]')
+      const sub = flags.blur === true ? 4 : Math.max(1, Math.round(+(flags.blur ?? 1)) || 1), scale = +(flags.scale ?? 1), workers = +(flags.workers ?? 4)
       const from = +(flags.from ?? 0), to = +(flags.to ?? film.duration)
       const n0 = Math.round(from * FPS * sub), n1 = Math.round(to * FPS * sub)
       const outDir = join(root, 'out', name); mkdirSync(outDir, { recursive: true })

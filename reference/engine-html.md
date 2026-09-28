@@ -85,10 +85,10 @@ node film.mjs measure 9.4                              # boxes of every [data-ta
 
 ```bash
 node film.mjs render draft --scale 0.5                    # fast review draft -> out/draft/
-node film.mjs render <name> --blur --poster 27.5 --webm   # final -> out/<name>/
+node film.mjs render <name> --blur --poster 27.5 --webm   # final -> out/<name>/  (--blur 8 or 16 for whips, shakes, spins)
 ```
 
-- `--blur` renders 4 subframes per frame and averages them into motion blur. It costs 4x the time, so use it for finals only.
+- `--blur [N]` renders N subframes per frame (4 by default) and averages them into motion blur. It costs N times the render time, so use it for finals only. Raise N when fast whips, shakes or spins show ghost copies in the encode (render.md).
 - The output is BT.709 limited range, with matrix, primaries and transfer all tagged. `audio/mix.wav` is muxed when it exists and a `-muted` copy is written next to it; `--muted` skips the audio altogether.
 - `--from`/`--to` render a slice, for checking one scene at full quality.
-- Frames render in parallel pages (`--workers 4`). A 30 s film at 60 fps takes a few minutes, or about 4x that with `--blur`.
+- Frames render in parallel pages (`--workers 4`). A 30 s film at 60 fps takes a few minutes, or about N times that with `--blur N`.
