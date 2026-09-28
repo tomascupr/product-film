@@ -18,7 +18,8 @@ For every .mp4 and .webm in the folder (point it at out/<name>, not out/):
   contain an --allow-gap time (a deliberate stop before a hit)
 - --script film.json: transcribes the first file with audio (ElevenLabs speech to text, needs
   ELEVENLABS_API_KEY) and lists every script word the transcript lost: a word the music buried.
-  Numbers are skipped, since "five point five" comes back as "5.5".
+  Numbers are skipped, since "five point five" comes back as "5.5", and so are [audio tags]. A word
+  with a voice.pronounce alias counts as heard when its alias is.
 Exits non-zero when a check fails.
 """
 
@@ -83,12 +84,15 @@ NUMBERS = set("zero one two three four five six seven eight nine ten eleven twel
 def lost_words(path, film_json):
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import eleven  # noqa: E402  (stdlib only; same folder)
-    words = lambda text: [w for w in re.findall(r"[a-z']+", text.lower().replace("’", "'")) if w not in NUMBERS]
-    lines = json.load(open(film_json)).get("voice", {}).get("lines", [])
+    words = lambda text: [w for w in re.findall(r"[a-z']+", eleven.spoken(text).lower().replace("’", "'")) if w not in NUMBERS]
+    voice = json.load(open(film_json)).get("voice", {})
     said = words(" ".join(w["text"] for w in eleven.listen(path, quiet=True)))
     # a compound can come back split ("liftoff" as "lift off"), so adjacent pairs count as heard too
     heard = set(said) | {a + b for a, b in zip(said, said[1:])}
-    return [w for w in words(" ".join(l["text"] for l in lines)) if w not in heard]
+    for rule in voice.get("pronounce", []):
+        if "alias" in rule and set(words(rule["alias"])) <= heard:
+            heard |= set(words(rule["word"]))
+    return [w for w in words(" ".join(l["text"] for l in voice.get("lines", []))) if w not in heard]
 
 
 def main():

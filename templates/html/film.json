@@ -7,7 +7,7 @@
   "cues": { "words": 0.4, "out": 4.6 },
   "voice": {
     "voice_id": "",
-    "model_id": "eleven_multilingual_v2",
+    "model_id": "eleven_v4",
     "lines": []
   },
   "music": null,
