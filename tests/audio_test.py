@@ -89,8 +89,30 @@ def mix_places_hits(folder):
         assert result.returncode != 0 and message in result.stderr, (bad, result.returncode, result.stderr)
 
 
+def mix_lines_up_stems(folder):
+    # Two stems of a click track, each 1203 samples late like the MP3 stems a separator returned: the mix must land them on time.
+    clicks = {0.5: "a", 1.0: "b", 1.5: "a"}
+    os.makedirs(f"{folder}/audio")
+    track, stems = np.zeros(2 * SR), {"a": np.zeros(2 * SR + 1203), "b": np.zeros(2 * SR + 1203)}
+    for t, name in clicks.items():
+        track[int(t * SR)] = stems[name][int(t * SR) + 1203] = 0.9
+    write_wav(f"{folder}/track.wav", track)
+    for name, stem in stems.items():
+        write_wav(f"{folder}/{name}.wav", stem)
+    dump(f"{folder}/film.json", {"duration": 2.0, "music": {"file": "track.wav", "stems": {"a": "a.wav", "b": "b.wav"},
+                                                             "gain_db": -20, "fade_out": 0}})
+    result = run(folder, "mix.py")
+    assert result.returncode == 0, result.stderr
+    assert "music stems: +25.1 ms against track.wav, lined up" in result.stdout, result.stdout
+    bed = np.abs(read(f"{folder}/audio/bed.wav"))
+    for t in clicks:
+        window = slice(int((t - 0.05) * SR), int((t + 0.05) * SR))
+        found = (window.start + int(np.argmax(bed[window]))) / SR
+        assert abs(found - t) <= 1 / SR, f"stem click meant for {t} s lands at {found:.5f} s"
+
+
 if __name__ == "__main__":
-    for check in (edit_places_segments, mix_places_hits):
+    for check in (edit_places_segments, mix_places_hits, mix_lines_up_stems):
         with tempfile.TemporaryDirectory() as folder:
             check(folder)
         print(f"ok {check.__name__}")

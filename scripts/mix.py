@@ -16,7 +16,8 @@ that word in the line ("v2:SAP#2" for its second time), matched as kit.js wordAt
 Ducking: the music dips by duck_db while any voice line plays (0.15 s attack, 0.4 s release).
 music.dips [[from, to, db], ...] dip it where no voice plays (0.4 s ramps outside from and to).
 music.stems {name: file} replaces music.file (each read from music.from), and music.duck_stems
-[names] ducks only those, so the drums keep driving under the voice.
+[names] ducks only those, so the drums keep driving under the voice. With music.file still set to the
+track they were separated from, the stems are lined up with it first: MP3 stems came back 25 ms late.
 Loudness: measured with EBU R128, then one linear gain to --lufs (default -14, web and social) and a
 peak limiter at -1 dBFS, so ducking and dynamics stay exactly as mixed.
 Prints voice windows and resolved hits, and warns on overlaps or lines that run past the end.
@@ -56,6 +57,14 @@ def place(bus, clip, start):
 def plain(word):
     """kit.js wordAt's normalisation: lower case, letters and digits only."""
     return "".join(c for c in word.lower() if c.isalnum())
+
+
+def lateness(reference, other, reach=SR // 2):
+    """Samples by which `other` lags `reference`: the peak of their cross-correlation within +-reach."""
+    n = min(len(reference), len(other))
+    size = 1 << (2 * n - 1).bit_length()
+    corr = np.fft.irfft(np.conj(np.fft.rfft(reference[:n].mean(axis=1), size)) * np.fft.rfft(other[:n].mean(axis=1), size), size)
+    return int(np.argmax(np.concatenate([corr[-reach:], corr[:reach + 1]]))) - reach
 
 
 def film_time(value, film):
@@ -136,9 +145,16 @@ def main():
             envelope *= dip + (1 - dip) * gain(db)
         duck = ramp(length, 0.15, 0.4, [(s, e) for s, e, _ in windows])
         duck = duck + (1 - duck) * gain(music.get("duck_db", -9))
+        tracks = {name: decode(path) for name, path in stems.items()}
+        if music.get("stems") and music.get("file"):
+            # A separator's stems can come back shifted (MP3 stems: the encoder's 25 ms delay), so line them up with their track.
+            longest = max(map(len, tracks.values()))
+            late = lateness(decode(music["file"]), sum(np.pad(t, ((0, longest - len(t)), (0, 0))) for t in tracks.values()))
+            print(f"music stems: {late / SR * 1000:+.1f} ms against {music['file']}, lined up")
+            tracks = {name: t[late:] if late >= 0 else np.pad(t, ((-late, 0), (0, 0))) for name, t in tracks.items()}
         offset = int(round(music.get("from", 0) * SR))
         for name, path in stems.items():
-            track = decode(path)[offset: offset + length] * gain(music.get("gain_db", 0))
+            track = tracks[name][offset: offset + length] * gain(music.get("gain_db", 0))
             peaks.append((level(track), f"music {path}"))
             if len(track) < length:
                 print(f"WARNING music {path} ends {(length - len(track)) / SR:.2f} s before the film", file=sys.stderr)
