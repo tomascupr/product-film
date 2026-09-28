@@ -22,8 +22,8 @@ Ask about the voice every time, even when BRAND.md has one: a film's voice is a 
 
 | Question | Options |
 |---|---|
-| Voiceover? | ElevenLabs narrator / Their own recorded voice / No voice, music and sound design only (often right for muted loops and short teasers) |
-| Which voice, and how many? | The account's voices from `eleven.py voices`, cloned and professional first, the last used one marked "(last time)". More than one only if the idea has a room, a dialogue or a call and answer. |
+| Voiceover? | ElevenLabs narrator / Their own recorded voice (timed with `eleven.py align`) / No voice, music and sound design only (often right for muted loops and short teasers) |
+| Which voice, and how many? | The account's voices from `eleven.py voices`, cloned and professional first, the last used one marked "(last time)". It marks a professional voice without its v4 fine-tune (voice.md). More than one only if the idea has a room, a dialogue or a call and answer. |
 | What music? | Composed with ElevenLabs to the film's acts / Their licensed track or stems / Synthesized in code / Silent |
 | Sound design? | Designed with ElevenLabs (music.md) / Synthesized in code / UI sounds only / None |
 
@@ -32,7 +32,7 @@ Ask about the voice every time, even when BRAND.md has one: a film's voice is a 
 
 ## Ingredients come with the idea
 
-How words appear, how scenes connect, what carries the brand (logo animation, a mascot, the UI alone), and extras such as cursors, partner logos, proof moments, the brand's own Lottie files or generated footage: each pitched idea proposes its own set (story.md), so the user picks an idea and its ingredients together. Asking for them before an idea exists fixes the film's shape too early.
+How words appear, how scenes connect, what carries the brand (logo animation, a mascot, the UI alone), and extras such as cursors, partner logos, proof moments, the brand's own Lottie files, generated footage or a 3D render: each pitched idea proposes its own set (story.md), so the user picks an idea and its ingredients together. Asking for them before an idea exists fixes the film's shape too early.
 
 ## Only if needed
 
