@@ -20,7 +20,7 @@ python3 $SKILL/scripts/eleven.py voices
 
 The interview asks for it (interview.md). Write the choice to `film.json` `voice.voice_id` (plus `model_id`, default `eleven_v4`) and to BRAND.md.
 
-- **A professional clone needs its v4 fine-tune** (My Voices, the plus next to Eleven v4), and `voices` marks one without it. v4 still generates with such a voice and gives no error, so fine-tune it first or give that voice `eleven_multilingual_v2`.
+- **v4 stays the default, fine-tuned or not.** `voices` marks a professional voice without its v4 fine-tune. Its owner can add one (My Voices, the plus next to Eleven v4); a library voice copied into your account can't be tuned there. The mark means listen, not switch: an untuned library voice (Jane) read much better on v4 than on `eleven_multilingual_v2`. Render one line on both and keep v4 unless its take drifts from the voice.
 - **v4 has only `stability` and `similarity_boost`:** no style or speed setting, and no SSML. It accepts `style` and `speed` without an error, so don't count on them. Tags direct the delivery instead.
 - **Try one line before you switch a voice's model.** A cloned narrator read two lines 27% slower on v4 than on `eleven_multilingual_v2` (3.76 s against 2.93 s, and 6.96 s against 5.48 s), and v4 has no speed setting to win that back. A film cut tight to its voice keeps the model it was timed on; a line's own `model_id` lets you hear both.
 
