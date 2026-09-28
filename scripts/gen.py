@@ -5,6 +5,7 @@ Run from the film folder. `video` needs FAL_KEY; both commands need ffmpeg and f
 Standard library only.
 
     python3 gen.py video --prompt "..." --first footage/in/000.png --last footage/in/001.png --seconds 4 --out footage/<name>
+    python3 gen.py video --prompt "..." --model fal-ai/kling-video/v3/standard/text-to-video --seconds 8 --arg aspect_ratio=1:1 --out footage/<name>
     python3 gen.py frames clip.mp4 --out footage/<name>          an MP4 from anywhere else, as frames
 
 --first and --last are the film's own stills (`node film.mjs stills` at the handoff times), so the
@@ -33,6 +34,7 @@ FIELDS = {
     "fal-ai/kling-video/v3/pro/image-to-video": ("start_image_url", "end_image_url", "{}"),
     "fal-ai/veo3.1/fast/first-last-frame-to-video": ("first_frame_url", "last_frame_url", "{}s"),
     "fal-ai/veo3.1/first-last-frame-to-video": ("first_frame_url", "last_frame_url", "{}s"),
+    "fal-ai/kling-video/v3/standard/text-to-video": (None, None, "{}"),   # no stills: the prompt makes the shot
 }
 
 
@@ -95,10 +97,11 @@ def video(args):
         first, last, duration = FIELDS[args.model]
         still = lambda path: path if path.startswith(("http://", "https://")) else data_uri(path)
         body["generate_audio"] = False
-        if args.first:
-            body[first] = still(args.first)
-        if args.last:
-            body[last] = still(args.last)
+        for given, field in ((args.first, first), (args.last, last)):
+            if given and not field:
+                sys.exit(f"{args.model} takes no stills: use an image-to-video endpoint for --first and --last")
+            if given:
+                body[field] = still(given)
         if args.seconds:
             body["duration"] = duration.format(args.seconds)
     elif args.first or args.last or args.seconds:

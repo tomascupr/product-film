@@ -20,6 +20,7 @@ import argparse
 import json
 import mimetypes
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -123,6 +124,8 @@ def review(model, fps, files, brief, prompt):
                         {"content-type": "application/json"})
     text = "\n".join(c["text"] for s in result.get("steps", []) if s.get("type") == "model_output"
                      for c in s.get("content", []) if c.get("type") == "text")
+    # it sometimes answers in markdown (**VERDICT:**, ### FINDINGS:, ``` fences): keep critic.md's plain shape
+    text = re.sub(r"^#+ *|\*\*|^```\w*$", "", text, flags=re.M).strip()
     if result.get("status") != "completed" or not text:
         sys.exit(f"Gemini returned no review (status {result.get('status')}):\n{json.dumps(result)[:2000]}")
     return text, result.get("usage", {})

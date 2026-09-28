@@ -76,9 +76,9 @@ node film.mjs stills footage/in 4.0 8.0      # the frames the shot starts and en
 python3 $SKILL/scripts/gen.py video --prompt "..." --first footage/in/000.png --last footage/in/001.png --seconds 4 --out footage/<name>
 ```
 
-- gen.py submits to fal.ai's queue (`FAL_KEY`), polls, downloads `clip.mp4` and writes every frame as a JPEG, plus `clip.json` (fps, frames, seconds, size, model, prompt, request id). Every run is paid, so it won't generate into a folder that has a clip unless you pass `--force`.
+- gen.py submits to fal.ai's queue (`FAL_KEY`), polls, downloads `clip.mp4` and writes every frame as a JPEG, plus `clip.json` (fps, frames, seconds, size, model, prompt, request id). Every run is paid, so it won't generate into a folder that has a clip unless you pass `--force`. With no stills to match, text to video makes the shot from the prompt alone: `--model fal-ai/kling-video/v3/standard/text-to-video --seconds 8 --arg aspect_ratio=1:1`.
 - The endpoints it maps, at fal's September 2026 prices with audio off (gen.py turns it off): Kling v3 standard, the default, $0.084/s for 3 to 15 s; Kling v3 pro $0.112/s; Veo 3.1 fast first-last-frame $0.10/s and Veo 3.1 $0.20/s, for 4, 6 or 8 s. `--model` takes any fal endpoint and `--arg key=value` any field on its API page (`--arg resolution=1080p` costs the same as 720p on Veo).
-- A 4 s Kling v3 standard shot between two 1280x720 stills took 60 s. Its first and last frames differed from the stills by 1.4 of 255 on average (PSNR 41 dB), and the ball it moved landed within 1 px, so neither cut showed. It came back as 97 frames (4.042 s), not 96, so resume the coded scene at `start + clip.seconds`.
+- A 4 s Kling v3 standard shot between two 1280x720 stills took 60 s; on another day 8 s shots took about 7 minutes each, so start every clip at once, one gen.py per clip. Its first and last frames differed from the stills by 1.4 of 255 on average (PSNR 41 dB), and the ball it moved landed within 1 px, so neither cut showed. It came back as 97 frames (4.042 s), not 96, so resume the coded scene at `start + clip.seconds`.
 - For a clip from elsewhere (a download, another generator), run `gen.py frames clip.mp4 --out footage/<name>`. Both commands read an untagged clip as BT.709 limited range. ffmpeg's own guess for an untagged clip is BT.601, which turned `#ffd400` into 248,223,9.
 
 ```js
