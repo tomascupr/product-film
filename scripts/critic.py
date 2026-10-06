@@ -5,7 +5,8 @@
 Writes out/critic/<video name>/:
   cover.png          frame 0 at 300 px, the thumbnail many players show
   sheet-N.png        the film every 1/3 s, 4 x 4 frames per sheet, row by row (sheet-1 starts at 0.0 s)
-  peak.png           10 frames 0.1 s apart from 0.3 s before --peak (default: film.json cues.peak, if any)
+  cue-<name>.png     10 frames 0.1 s apart from 0.3 s before each film.json cue, and before --peak as
+                     cue-peak.png: a hit or a handoff is over between two frames of a sheet
   frames/t=S.png     each sampled frame at 540 px, to zoom in on one moment
   energy.txt         energy.py's report on the same file
   brief.md           the film's direction and beat sheet (from --brief), for the second half of the review
@@ -17,6 +18,7 @@ Then give reference/critic.md and this folder to a reviewer that has not seen th
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -79,18 +81,26 @@ def main():
         tile(files[k:k + 16], 4, sheet)
         sheets.append((sheet, times[k], times[min(k + 15, len(times) - 1)]))
 
-    peak = args.peak
-    if peak is None and os.path.exists("film.json"):
-        peak = json.load(open("film.json")).get("cues", {}).get("peak")
-    if peak is not None:
-        strip = []
+    cues = json.load(open("film.json")).get("cues", {}) if os.path.exists("film.json") else {}
+    if args.peak is not None:
+        cues["peak"] = args.peak
+    moments = {}  # cues that share a time share a strip
+    for name, t in cues.items():
+        if isinstance(t, (int, float)) and 0 <= t < dur:
+            moments.setdefault(round(t, 2), []).append(name)
+    strips = []
+    for t, names in sorted(moments.items()):
+        name = "+".join(names)
+        strip = os.path.join(out, f"cue-{re.sub(r'[^\w+-]', '_', name)}.png")
+        frames = []
         for i in range(10):
-            f = os.path.join(out, f"peak-{i}.png")
-            grab(args.video, max(0, peak - 0.3 + i * 0.1), 540, f)
-            strip.append(f)
-        tile(strip, 5, os.path.join(out, "peak.png"))
-        for f in strip:
+            f = strip.replace(".png", f"-{i}.png")
+            grab(args.video, min(dur - 0.02, max(0, t - 0.3 + i * 0.1)), 540, f)
+            frames.append(f)
+        tile(frames, 5, strip)
+        for f in frames:
             os.remove(f)
+        strips.append((strip, name, t))
 
     report = subprocess.run([sys.executable, os.path.join(HERE, "energy.py"), args.video], capture_output=True, text=True)
     open(os.path.join(out, "energy.txt"), "w").write(report.stdout + report.stderr)
@@ -102,8 +112,8 @@ def main():
     guide += [f"{i + 2}. {os.path.basename(s)}: the film from {a:.2f} s to {b:.2f} s, one frame every {args.step:.2f} s, 4 per row, row by row."
               for i, (s, a, b) in enumerate(sheets)]
     n = len(sheets) + 2
-    if peak is not None:
-        guide.append(f"{n}. peak.png: 10 frames 0.1 s apart from {max(0, peak - 0.3):.2f} s, around the intended peak at {peak:.2f} s.")
+    for strip, name, t in strips:
+        guide.append(f"{n}. {os.path.basename(strip)}: 10 frames 0.1 s apart from {max(0, t - 0.3):.2f} s, 5 per row, around the cue {name} at {t:.2f} s.")
         n += 1
     guide.append(f"{n}. frames/: every sampled frame at 540 px, named by time, to zoom in.")
     guide.append(f"{n + 1}. energy.txt: measured motion per 0.25 s with the sound's loudness beside it, dead stretches, and loud hits that land on still frames.")

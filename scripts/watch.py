@@ -8,8 +8,9 @@ Run it from the film folder, like critic.py. Needs GEMINI_API_KEY and ffmpeg. St
   file: the API hears the sound inside a video at 1 kbps mono, and a separate audio file at 16 kbps mono.
 - Sends reference/critic.md's reviewer prompt, read at run time, with its "What you have" paragraph
   swapped for this reviewer's, a sound section only a listener can answer, and the brief if it exists.
-- Prints the answer (critic.md's shape plus a SOUND block), the tokens and an estimated cost, then deletes
-  the uploads, also when something fails on the way. The request is sent with store: false.
+- Prints the answer (critic.md's shape plus a SOUND block), the tokens and an estimated cost, and saves them
+  to out/watch/<name>.txt, away from the critic's pack. Then it deletes the uploads, also when something
+  fails on the way. The request is sent with store: false.
 
 --fps: 10 by default, a frame every 0.1 s, so a whip or slam a few frames long is still seen. At high media
 resolution a frame measured 258 tokens, so a 60 s film comes to about 160k tokens: about $0.13 on Flash,
@@ -165,9 +166,12 @@ def main():
                 files.append(upload(path, mime))
             files = [active(f) for f in files]
             text, usage = review(args.model, args.fps, files, brief, prompt)
-            print(text)
-            print()
-            print(cost(args.model, usage))
+            answer = f"{text}\n\n{cost(args.model, usage)}"
+            print(answer)
+            saved = os.path.join("out", "watch", os.path.splitext(os.path.basename(args.video))[0] + ".txt")
+            os.makedirs(os.path.dirname(saved), exist_ok=True)
+            open(saved, "w").write(answer + "\n")
+            print(f"saved to {saved}", file=sys.stderr)
         except urllib.error.HTTPError as error:
             sys.exit(f"Gemini {error.url.split('?')[0]}: HTTP {error.code}\n{error.read().decode(errors='replace')[:2000]}")
         finally:
