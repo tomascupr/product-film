@@ -118,3 +118,9 @@ Footage (gen.py's `clip.mp4`, a rendered shot) needs no twin: `<Video>` from `@r
 - Put `data-target="name"` on anything a cursor clicks or a traveler lands on.
 - Render with `debug: true`: `node scripts/stills.ts out/review/debug <frames> --composition <Id> --debug`, then read the box numbers printed in the frame.
 - Re-measure after any layout change upstream of a target (a removed line moves everything under it).
+
+## Traps
+
+- `npx remotion still` re-bundles on every call; `scripts/stills.ts` bundles once for all its frames.
+- Stills do not forward console logs; `kit/debug.tsx` prints into the frame instead.
+- Remotion's bundled ffmpeg lacks `tmix`, `select` and `tile`, so `scripts/render.ts` blends the subframes with the ffmpeg that imageio-ffmpeg brings.

@@ -1,6 +1,7 @@
 <!doctype html>
 <!-- Fixture for `film.mjs check`: expect small "tiny caption", covered "Spreadsheets", overlap "Hello"/"World", and nothing for "Clean line" or "Hidden below".
-     Run: cp ../../templates/html/film.mjs . && ln -s <a film folder>/node_modules && node film.mjs check 0 --><html><body style="margin:0;width:1080px;height:1080px;position:relative;background:#fff;font-family:sans-serif">
+     From 1 s the note sits under a card whose height render(t) reads before it shows the card: 0 in a fresh page, 120 after a
+     frame that showed it, so `check --cold` reports those times and no earlier one. From 9 s render(t) throws. Run: ./run.sh --><html><head><link rel="icon" href="data:,"></head><body style="margin:0;width:1080px;height:1080px;position:relative;background:#fff;font-family:sans-serif">
 <div style="position:absolute;left:100px;top:100px;font-size:80px">Spreadsheets</div>
 <div style="position:absolute;left:80px;top:110px;width:90px;height:90px;background:#36c;border-radius:16px"></div>
 <div style="position:absolute;left:100px;top:400px;font-size:14px">tiny caption</div>
@@ -9,4 +10,15 @@
 <div style="position:absolute;left:100px;top:800px;font-size:60px">Clean line</div>
 <div style="position:absolute;left:0;top:900px;width:1080px;height:180px;background:#eee"></div>
 <div style="position:absolute;left:100px;top:950px;font-size:60px;z-index:-1">Hidden below</div>
-<script>window.render=()=>{};window.ready=Promise.resolve()</script></body></html>
+<div id="card" style="display:none;position:absolute;left:700px;top:100px;width:200px;height:120px;background:#36c"></div>
+<div id="note" style="display:none;position:absolute;left:700px;width:200px;height:40px;background:#c33"></div>
+<script>
+const card = document.getElementById('card'), note = document.getElementById('note')
+window.render = t => {
+  if (t >= 9) throw new Error('no such scene')
+  const h = t >= 1 ? card.offsetHeight : 0   // the bug: read while the frame before still decides whether the card shows
+  card.style.display = note.style.display = t >= 1 ? 'block' : 'none'
+  note.style.top = 120 + h + 'px'
+}
+window.ready = Promise.resolve()
+</script></body></html>

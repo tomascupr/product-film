@@ -1,15 +1,18 @@
 // The HTML engine's harness: serve the film, take stills, measure targets, render.
 //
 //   node film.mjs serve [--port 4173]                 preview at /#play, one frame at /#t=12.4
-//   node film.mjs stills <dir> <seconds>...           PNG per time, plus sheet.png
+//   node film.mjs stills <dir> <seconds>... [--cues]  PNG per time, plus sheet.png (sheet-N.png past 16 frames)
 //   node film.mjs measure <seconds>                   JSON boxes of every [data-target]
-//   node film.mjs check <seconds>... [--view 390] [--min 10]
+//   node film.mjs check <seconds>... [--cues] [--cold] [--view 390] [--min 10]
 //                                                     text too small at the viewing width, covered, overlapping
-//                                                     or off frame; out/check/<t>.png at that width to look at
-//   node film.mjs render <name> [--blur [N]] [--scale 0.5] [--from s] [--to s] [--webm] [--poster s] [--muted] [--workers 4]
+//                                                     or off frame; out/check/<t>.png at that width to look at.
+//                                                     --cold: a frame that changes with what was drawn before it
+//   node film.mjs render <name> [--blur [N]] [--segments [s]] [--scale 0.5] [--from s] [--to s] [--webm] [--poster s] [--muted] [--workers 4]
 //                                                     -> out/<name>/<name>.mp4 (+ -muted.mp4, .webm, -poster.jpg,
 //                                                        -cover-300.png: frame 0 at thumbnail size, with its text checked)
 //
+// --cues on stills or check adds the film's own moments to the times given: frame 0, every film.json cue,
+// and the middle and last word of every voice line.
 // --size 1080x1920 on stills, measure, check or render draws the same film at another size (film.json size
 // by default), so each format of one timeline renders from one folder, in parallel under its own name.
 //
@@ -17,18 +20,20 @@
 // ffmpeg. --blur renders N subframes per frame (4 by default) and averages them: motion blur, N times slower.
 // Colors: screenshots are sRGB; ffmpeg converts once to BT.709 limited range and tags it,
 // so dark backgrounds do not come back lifted. Muxes audio/mix.wav when it exists.
+// --segments renders s seconds of film per browser (10 when bare) and joins the pieces: a long blurred
+// render can stall in one browser. A finished render replaces the one before it; a failed one leaves it alone.
 import { chromium } from 'playwright-core'
 import { spawn } from 'node:child_process'
 import { createServer } from 'node:http'
-import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { extname, join, resolve } from 'node:path'
 
 const [cmd, ...rest] = process.argv.slice(2)
-const flags = {}, args = []
+const flags = {}, args = [], SWITCHES = ['cues', 'cold', 'webm', 'muted'] // these take no value, so a time after one stays a time
 for (let i = 0; i < rest.length; i++) {
   if (!rest[i].startsWith('--')) { args.push(rest[i]); continue }
-  const next = rest[i + 1]
-  flags[rest[i].slice(2)] = next === undefined || next.startsWith('--') ? true : (i++, next)
+  const name = rest[i].slice(2), next = rest[i + 1]
+  flags[name] = SWITCHES.includes(name) || next === undefined || next.startsWith('--') ? true : (i++, next)
 }
 const root = process.cwd()
 const film = JSON.parse(readFileSync(join(root, 'film.json'), 'utf8'))
@@ -62,15 +67,54 @@ async function open(browser, url, scale = 1) {
 function ffmpeg(list) {
   const p = spawn(process.env.FFMPEG ?? 'ffmpeg', ['-v', 'error', '-y', ...list], { stdio: ['pipe', 'inherit', 'inherit'] })
   const done = new Promise((ok, fail) => p.on('close', c => c ? fail(new Error(`ffmpeg exited ${c}`)) : ok()))
+  // A write after ffmpeg has gone is not the error; `done` carries the reason to whoever awaits it.
+  done.catch(() => {}); p.stdin.on('error', () => {})
   return { stdin: p.stdin, done, kill: () => p.kill('SIGKILL') }
 }
 
 // An error inside the page (a missing cue word, a typo) stops the run with its own message.
 let pageError
 async function draw(page, t) {
-  await page.evaluate(t => window.render(t), t)
+  const threw = await page.evaluate(async t => { try { await window.render(t) } catch (e) { return e?.stack ?? String(e) } }, t)
+  if (threw) pageError ??= new Error(`render(${t}): ${threw}`)
   if (pageError) throw new Error(`page error: ${pageError.message}`)
 }
+
+// --cues: the film's own moments, so every look and check covers the same set.
+function moments() {
+  const found = new Map([[0, ['frame 0, the cover']]])
+  const add = (t, why) => { t = +t.toFixed(2); if (t >= 0 && t < film.duration) found.set(t, [...(found.get(t) ?? []), why]) }
+  for (const [name, t] of Object.entries(film.cues ?? {})) if (typeof t === 'number') add(t, `cue ${name}`)
+  for (const line of film.voice?.lines ?? []) {
+    const file = join(root, 'audio', 'vo', `${line.id}.json`)
+    const last = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')).words?.at(-1) : null
+    // "said" is inside the last word: at its end the next line may already be starting
+    if (last) { add(line.at + last.end / 2, `${line.id} halfway`); add(line.at + (last.start + last.end) / 2, `${line.id} said: ${line.text}`) }
+  }
+  return [...found].sort((a, b) => a[0] - b[0]).map(([t, why]) => ({ t, why: why.join(' · ') }))
+}
+// The times a command looks at: the ones given, in their order, then with --cues the film's moments.
+const timesOf = given => [...given.map(t => ({ t: +t, why: '' })), ...(flags.cues ? moments().filter(m => !given.some(g => +g === m.t)) : [])]
+
+// How far two screenshots of one frame are apart: the share of the frame off by more than 24 levels (something
+// moved, showed or hid), the share off by more than 4 (a faint layer), and the box around those.
+const differ = (page, a, b) => page.evaluate(async ({ a, b }) => {
+  const pixels = async s => {
+    const img = await createImageBitmap(new Blob([Uint8Array.from(atob(s), c => c.charCodeAt(0))], { type: 'image/png' }))
+    const g = new OffscreenCanvas(img.width, img.height).getContext('2d')
+    g.drawImage(img, 0, 0)
+    return g.getImageData(0, 0, img.width, img.height)
+  }
+  const [A, B] = [await pixels(a), await pixels(b)], w = A.width
+  let strong = 0, faint = 0, x0 = w, y0 = A.height, x1 = 0, y1 = 0
+  for (let i = 0; i < A.data.length; i += 4) {
+    const d = Math.max(Math.abs(A.data[i] - B.data[i]), Math.abs(A.data[i + 1] - B.data[i + 1]), Math.abs(A.data[i + 2] - B.data[i + 2]))
+    if (d <= 4) continue
+    const x = (i / 4) % w, y = Math.floor(i / 4 / w)
+    faint++; strong += d > 24; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y)
+  }
+  return { strong: strong / (w * A.height), faint: faint / (w * A.height), box: `x ${x0}-${x1}, y ${y0}-${y1}` }
+}, { a: a.toString('base64'), b: b.toString('base64') })
 
 // Text on the current frame that is too small at the viewing width, covered, overlapping or off frame.
 async function inspect(page, view, min) {
@@ -142,21 +186,24 @@ if (cmd === 'serve') {
   const browser = await launch()
   try {
     if (cmd === 'stills') {
-      const [dir, ...times] = args
-      if (!dir || !times.length) throw new Error('usage: node film.mjs stills <dir> <seconds>...')
+      const [dir, ...given] = args, times = timesOf(given)
+      if (!dir || !times.length) throw new Error('usage: node film.mjs stills <dir> <seconds>... [--cues]')
       mkdirSync(dir, { recursive: true })
       const page = await open(browser, url)
-      for (const [i, t] of times.entries()) {
-        await draw(page, +t)
+      for (const [i, { t, why }] of times.entries()) {
+        await draw(page, t)
         const file = join(dir, `${String(i).padStart(3, '0')}.png`)
         await page.screenshot({ path: file })
-        console.log(`${file}  t=${t}`)
+        console.log(`${file}  t=${t}${why && '  ' + why}`)
       }
       if (times.length > 1) {
-        const cols = Math.min(4, times.length)
-        const sheet = ffmpeg(['-framerate', '1', '-i', join(dir, '%03d.png'), '-vf', `scale=480:-1,tile=${cols}x${Math.ceil(times.length / cols)}:padding=4:color=0x333333`, '-frames:v', '1', join(dir, 'sheet.png')])
+        // 16 frames a sheet at most, so each stays big enough to read
+        const many = times.length > 16, cols = Math.min(4, times.length), rows = many ? 4 : Math.ceil(times.length / cols)
+        const sheet = ffmpeg(['-framerate', '1', '-i', join(dir, '%03d.png'), '-vf', `scale=480:-1,tile=${cols}x${rows}:padding=4:color=0x333333`,
+          ...(many ? ['-fps_mode', 'passthrough', join(dir, 'sheet-%d.png')] : ['-frames:v', '1', join(dir, 'sheet.png')])])
         sheet.stdin.end(); await sheet.done
-        console.log(join(dir, 'sheet.png'))
+        if (many) for (let k = 0; k < times.length; k += 16) console.log(`${join(dir, `sheet-${k / 16 + 1}.png`)}  t=${times[k].t} to ${times[Math.min(k + 15, times.length - 1)].t}, row by row`)
+        else console.log(join(dir, 'sheet.png'))
       }
     } else if (cmd === 'measure') {
       const page = await open(browser, url)
@@ -169,20 +216,41 @@ if (cmd === 'serve') {
       })
       console.log(JSON.stringify(boxes, null, 1))
     } else if (cmd === 'check') {
-      if (!args.length) throw new Error('usage: node film.mjs check <seconds>... [--view 390] [--min 10]')
+      const times = timesOf(args)
+      if (!times.length) throw new Error('usage: node film.mjs check <seconds>... [--cues] [--cold] [--view 390] [--min 10]')
       // --view: the width the film is watched at in CSS px (a phone feed is about 390). --min: smallest readable text there.
       const view = +(flags.view ?? 390), min = +(flags.min ?? 10), dir = join(root, 'out', 'check')
       mkdirSync(dir, { recursive: true })
-      const page = await open(browser, url)
+      const page = await open(browser, url), shot = { scale: 'css', clip: { x: 0, y: 0, width: W, height: H } }
       let total = 0
-      for (const t of args) {
-        await draw(page, +t)
+      for (const { t, why } of times) {
+        await draw(page, t)
         const issues = await inspect(page, view, min)
-        const file = join(dir, `${(+t).toFixed(2)}.png`)
-        await page.screenshot({ path: file, scale: 'css', clip: { x: 0, y: 0, width: W, height: H } })
+        const file = join(dir, `${t.toFixed(2)}.png`)
+        await page.screenshot({ path: file, ...shot })
         const small = ffmpeg(['-i', file, '-vf', `scale=${view}:-1:flags=area`, file.replace('.png', '-view.png')]); small.stdin.end(); await small.done
+        if (flags.cold) {
+          // The frame in a fresh page against the same frame in this one, which has drawn others: after the time
+          // before it in the list, after the frame before it, and after one from the far side of the film.
+          // They differ when render(t) leans on what an earlier frame left behind, and then renders disagree too.
+          const fresh = await open(browser, url)
+          await draw(fresh, t)
+          const cold = await fresh.screenshot(shot)
+          let warm = readFileSync(file)
+          for (const before of [null, Math.max(0, t - 1 / FPS), (t + film.duration / 2) % film.duration]) {
+            if (before !== null) { await draw(page, before); await draw(page, t); warm = await page.screenshot(shot) }
+            const d = await differ(fresh, cold, warm)
+            // Raster dust stays under both marks: over a 48 s film with camera zooms on text, the worst frame
+            // had 0.03% of its pixels past 4 levels and none past 24.
+            if (d.strong < 0.0002 && d.faint < 0.005) continue
+            writeFileSync(file.replace('.png', '-cold.png'), cold); writeFileSync(file.replace('.png', '-warm.png'), warm)
+            issues.cold = [`${(d.faint * 100).toFixed(2)}% of the frame differs at ${d.box}: compare ${file.replace('.png', '-cold.png')} with -warm.png`]
+            break
+          }
+          await fresh.close()
+        }
         const count = Object.values(issues).flat().length
-        console.log(`t=${t}  ${count ? count + ' issue(s)' : 'clean'}  ${file.replace('.png', '-view.png')}`)
+        console.log(`t=${t}  ${count ? count + ' issue(s)' : 'clean'}  ${file.replace('.png', '-view.png')}${why && '  ' + why}`)
         for (const [kind, list] of Object.entries(issues)) if (list.length)
           console.log(`  ${kind} (${list.length}): ${list.slice(0, 6).join(' · ')}${list.length > 6 ? ` · +${list.length - 6} more` : ''}`)
         total += count
@@ -190,45 +258,76 @@ if (cmd === 'serve') {
       if (total) process.exitCode = 1
     } else {
       const [name] = args
-      if (!name) throw new Error('usage: node film.mjs render <name> [--blur [N]] [--scale 0.5] [--from s] [--to s] [--webm] [--poster s]')
+      if (!name) throw new Error('usage: node film.mjs render <name> [--blur [N]] [--segments [s]] [--scale 0.5] [--from s] [--to s] [--webm] [--poster s]')
       const sub = flags.blur === true ? 4 : Math.max(1, Math.round(+(flags.blur ?? 1)) || 1), scale = +(flags.scale ?? 1), workers = +(flags.workers ?? 4)
       const from = +(flags.from ?? 0), to = +(flags.to ?? film.duration)
-      const n0 = Math.round(from * FPS * sub), n1 = Math.round(to * FPS * sub)
-      const outDir = join(root, 'out', name); mkdirSync(outDir, { recursive: true })
-      const file = join(outDir, `${name}.mp4`)
+      const f0 = Math.round(from * FPS), f1 = Math.round(to * FPS)
+      if (!(f1 > f0)) throw new Error(`nothing to render from ${from} to ${to} s`)
+      // Parts are whole frames, so each frame's subframes stay in one part and the join shows no seam.
+      const span = flags.segments ? Math.max(1, Math.round((flags.segments === true ? 10 : +flags.segments) * FPS)) : f1 - f0
+      const bounds = []
+      for (let a = f0; a < f1; a += span) bounds.push([a, Math.min(f1, a + span)])
+      const outDir = join(root, 'out', name), tmp = join(outDir, '.parts')
+      rmSync(tmp, { recursive: true, force: true }); mkdirSync(tmp, { recursive: true })
+      const file = join(outDir, `${name}.mp4`), partName = k => `${String(k).padStart(3, '0')}.mp4`
       const mixWav = join(root, 'audio', 'mix.wav')
       const audio = existsSync(mixWav) && !flags.muted
-      // Open the pages first: a page error then stops the run before ffmpeg starts.
-      const pages = await Promise.all(Array.from({ length: workers }, () => open(browser, url, scale)))
       const blur = sub > 1 ? `tmix=frames=${sub},select='not(mod(n+1\\,${sub}))',setpts=N/(${FPS}*TB),` : ''
-      const enc = ffmpeg([
-        '-f', 'image2pipe', '-framerate', String(FPS * sub), '-i', '-',
-        ...(audio ? ['-ss', String(from), '-t', String(to - from), '-i', mixWav] : []),
-        // setparams tags primaries and transfer too; output flags alone leave them 'unknown'.
-        '-vf', `${blur}scale=out_color_matrix=bt709:out_range=tv:flags=lanczos,format=yuv420p,setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv`,
-        '-r', String(FPS), '-c:v', 'libx264', '-preset', 'slow', '-crf', '16',
-        '-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709', '-color_range', 'tv',
-        ...(audio ? ['-c:a', 'aac', '-b:a', '256k', '-shortest'] : ['-an']), '-movflags', '+faststart', file,
-      ])
-      // Workers render interleaved frames; the writer drains them in order.
-      // ponytail: frames buffer in memory up to AHEAD per worker; lower it if RAM is tight at 4K.
-      const AHEAD = 24, done = new Map()
-      let next = n0
       const wait = () => new Promise(r => setTimeout(r, 5))
       const started = Date.now()
-      try { await Promise.all(pages.map(async (page, k) => {
-        for (let i = n0 + k; i < n1; i += workers) {
-          while (i - next > AHEAD * workers) await wait()
-          await draw(page, i / (FPS * sub))
-          done.set(i, await page.screenshot({ type: 'png' }))
-          while (done.has(next)) {
-            const buf = done.get(next); done.delete(next); next++
-            if (!enc.stdin.write(buf)) await new Promise(r => enc.stdin.once('drain', r))
-            if ((next - n0) % (FPS * sub * 5) === 0) console.log(`${((next - n0) / (FPS * sub)).toFixed(0)} s rendered, ${((Date.now() - started) / 1000).toFixed(0)} s elapsed`)
+      // Frames a to b of the film into a video-only file, in a browser of their own.
+      const part = async (out, a, b) => {
+        const own = await launch()
+        try {
+          // Open the pages first: a page error then stops the run before ffmpeg starts.
+          const pages = await Promise.all(Array.from({ length: workers }, () => open(own, url, scale)))
+          const enc = ffmpeg([
+            '-f', 'image2pipe', '-framerate', String(FPS * sub), '-i', '-',
+            // setparams tags primaries and transfer too; output flags alone leave them 'unknown'.
+            '-vf', `${blur}scale=out_color_matrix=bt709:out_range=tv:flags=lanczos,format=yuv420p,setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv`,
+            '-r', String(FPS), '-c:v', 'libx264', '-preset', 'slow', '-crf', '16',
+            '-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709', '-color_range', 'tv', '-an', out,
+          ])
+          // Workers render interleaved frames; the writer drains them in order.
+          // ponytail: frames buffer in memory up to AHEAD per worker; lower it if RAM is tight at 4K.
+          const AHEAD = 24, done = new Map(), n1 = b * sub
+          let next = a * sub, failed = false
+          try { await Promise.all(pages.map(async (page, k) => {
+            for (let i = a * sub + k; i < n1 && !failed; i += workers) {
+              while (i - next > AHEAD * workers && !failed) await wait()
+              await draw(page, i / (FPS * sub))
+              done.set(i, await page.screenshot({ type: 'png' }))
+              while (done.has(next)) {
+                const buf = done.get(next); done.delete(next); next++
+                // Wait for ffmpeg to take it, or to die: its exit is then the error, not a drain that never comes.
+                if (!enc.stdin.write(buf)) await Promise.race([new Promise(r => enc.stdin.once('drain', r)), enc.done])
+                if ((next - f0 * sub) % (FPS * sub * 5) === 0) console.log(`${((next - f0 * sub) / (FPS * sub)).toFixed(0)} s rendered, ${((Date.now() - started) / 1000).toFixed(0)} s elapsed`)
+              }
+            }
+          })) } catch (e) { failed = true; enc.kill(); throw e }
+          enc.stdin.end(); await enc.done
+        } finally { await own.close() }
+      }
+      try {
+        for (const [k, [a, b]] of bounds.entries()) {
+          for (let tries = 0; ; tries++) {
+            try { await part(join(tmp, partName(k)), a, b); break } catch (e) {
+              // A stalled or crashed browser is worth one more go in a new one; the film's own error is not.
+              if (tries || pageError) throw e
+              console.log(`${(a / FPS).toFixed(1)} to ${(b / FPS).toFixed(1)} s failed (${e.message.split('\n')[0]}); once more in a fresh browser`)
+            }
           }
         }
-      })) } catch (e) { enc.kill(); throw e }
-      enc.stdin.end(); await enc.done
+        writeFileSync(join(tmp, 'list.txt'), bounds.map((_, k) => `file '${partName(k)}'\n`).join(''))
+        const joined = join(tmp, 'joined.mp4')
+        const mux = ffmpeg([
+          ...(bounds.length > 1 ? ['-f', 'concat', '-i', join(tmp, 'list.txt')] : ['-i', join(tmp, partName(0))]),
+          ...(audio ? ['-ss', String(from), '-t', String(to - from), '-i', mixWav] : []), '-c:v', 'copy',
+          ...(audio ? ['-c:a', 'aac', '-b:a', '256k', '-shortest'] : ['-an']), '-movflags', '+faststart', joined,
+        ])
+        mux.stdin.end(); await mux.done
+        renameSync(joined, file)
+      } finally { rmSync(tmp, { recursive: true, force: true }) }
       const outputs = [file]
       if (audio) {
         const muted = join(outDir, `${name}-muted.mp4`)
@@ -240,9 +339,9 @@ if (cmd === 'serve') {
         const v = ffmpeg(['-i', file, '-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', '32', '-row-mt', '1', '-pix_fmt', 'yuv420p', '-an', webm]); v.stdin.end(); await v.done
         outputs.push(webm)
       }
+      const page = from === 0 || flags.poster ? await open(browser, url, scale) : null
       if (from === 0) {
         // Frame 0 is the cover in many players and feeds. Save it at thumbnail size and check its text.
-        const page = pages[0]
         await draw(page, 0)
         const full = join(outDir, `${name}-cover.png`)
         await page.screenshot({ path: full })
@@ -252,7 +351,6 @@ if (cmd === 'serve') {
         console.log('  look at it: would someone click this? The subject whole and readable, nothing half-cropped or mid-move.')
       }
       if (flags.poster) {
-        const page = pages[0]
         await draw(page, +flags.poster)
         const poster = join(outDir, `${name}-poster.jpg`)
         await page.screenshot({ path: poster, type: 'jpeg', quality: 90 })
@@ -260,10 +358,15 @@ if (cmd === 'serve') {
       }
       for (const f of outputs) console.log(`${f}  ${(statSync(f).size / 1e6).toFixed(1)} MB`)
     }
+  } catch (e) {
+    // The last line says how the run ended, also when its output is piped or tailed.
+    console.error(e.stack ?? e)
+    console.error(`FAILED: ${String(e.message ?? e).split('\n')[0]}`)
+    process.exitCode = 1
   } finally {
     await browser.close()
     server.close()
   }
 } else {
-  console.log(readFileSync(new URL(import.meta.url), 'utf8').split('\n').slice(0, 9).join('\n'))
+  console.log(readFileSync(new URL(import.meta.url), 'utf8').split('\n').slice(0, 15).join('\n'))
 }
