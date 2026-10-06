@@ -8,6 +8,11 @@ Prices, timings and thresholds measured on real films, each under its date. They
 - A 4 s Kling v3 standard shot between two 1280x720 stills took 60 s. On another day 8 s shots took about 7 minutes each.
 - That 4 s shot's first and last frames differed from the stills by 1.4 of 255 on average (PSNR 41 dB), and the ball it moved landed within 1 px, so neither cut showed. It came back as 97 frames (4.042 s), not 96.
 
+## Seedance 2.5 and Gemini stills (October 2026, list prices, not yet measured on a film)
+
+- Seedance 2.5 image to video on fal is billed by frame area: about $0.47/s at 720p and $0.22/s at 480p for 16:9, the same with or without audio. Takes run 4 to 30 s; resolution stops at 720p.
+- Gemini stills per image: Nano Banana 2.1 (`gemini-nano-banana-2.1`, gen.py's default) $0.034 at 1K, $0.050 at 2K, $0.076 at 4K; Nano Banana Pro (`gemini-3-pro-image`) $0.134 at 1K or 2K, $0.24 at 4K. Google's own preference test ranks 2.1 above Pro; early side-by-sides found Pro's photographs more natural, so try both on a still that has to pass as a photograph.
+
 ## Blender (5.2 on Apple Silicon, September 2026)
 
 - On an M4 Max the torus in `templates/3d/shot.py` took 1.6 s a frame, after about 2 minutes on the very first render while Metal compiled its kernels.

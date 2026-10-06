@@ -1,19 +1,25 @@
-"""Generated footage for product films: a clip from fal.ai as an image sequence that kit.js
-footage() plays frame-exact on the film's clock.
+"""Generated footage and stills for product films: a clip from fal.ai as an image sequence that
+kit.js footage() plays frame-exact on the film's clock, or a still from Gemini.
 
-Run from the film folder. `video` needs FAL_KEY; both commands need ffmpeg and ffprobe on PATH.
-Standard library only.
+Run from the film folder. `video` needs FAL_KEY, `image` GEMINI_API_KEY; all commands need ffmpeg
+and ffprobe on PATH. Standard library only.
 
     python3 gen.py video --prompt "..." --first footage/in/000.png --last footage/in/001.png --seconds 4 --out footage/<name>
     python3 gen.py video --prompt "..." --model fal-ai/kling-video/v3/standard/text-to-video --seconds 8 --arg aspect_ratio=1:1 --out footage/<name>
     python3 gen.py frames clip.mp4 --out footage/<name>          an MP4 from anywhere else, as frames
+    python3 gen.py image --prompt "..." [--ref still.png ...] [--aspect 16:9] [--size 2K] --out img/<name>.png
 
 --first and --last are the film's own stills (`node film.mjs stills` at the handoff times), so the
 shot starts or ends on a coded frame. Local files go up as data URIs. --model takes any fal endpoint
 id; --arg key=value adds or overrides a request field (JSON when it parses, a local file becomes a
-data URI). Audio is off on the endpoints gen.py maps: the frames drop it, and it costs extra.
+data URI). Audio is off on the endpoints gen.py maps: the frames drop it, and on most it costs extra.
 <out>/ gets clip.mp4, 0001.jpg... and clip.json {fps, frames, seconds, size, ext, model, prompt, request_id}.
 `video` will not generate into a folder that has a clip.json (it costs money again); --force does.
+
+`image` makes a still from the prompt, or from up to 14 --ref images it is told to edit or combine:
+the film's own frame turned into the idea's world (a start or end still for `video`), a real-world
+object, a person. Never the product's own screens. It writes <out> and <out>.json {model, prompt,
+ref, aspect, size}, and will not overwrite <out> without --force.
 """
 
 import argparse
@@ -28,6 +34,7 @@ import urllib.error
 import urllib.request
 
 QUEUE = "https://queue.fal.run/"
+GEMINI = "https://generativelanguage.googleapis.com/v1beta/interactions"
 # What --first, --last and --seconds are called on each endpoint (its API page on fal.ai).
 FIELDS = {
     "fal-ai/kling-video/v3/standard/image-to-video": ("start_image_url", "end_image_url", "{}"),
@@ -35,6 +42,7 @@ FIELDS = {
     "fal-ai/veo3.1/fast/first-last-frame-to-video": ("first_frame_url", "last_frame_url", "{}s"),
     "fal-ai/veo3.1/first-last-frame-to-video": ("first_frame_url", "last_frame_url", "{}s"),
     "fal-ai/kling-video/v3/standard/text-to-video": (None, None, "{}"),   # no stills: the prompt makes the shot
+    "bytedance/seedance-2.5/image-to-video": ("image_url", "end_image_url", "{}"),  # 4 to 30 s in one take, 720p at most
 }
 
 
@@ -146,6 +154,47 @@ def frames(args):
     save(args.out, extract(args.mp4, args.out))
 
 
+def image(args):
+    key = os.environ.get("GEMINI_API_KEY")
+    if not key:
+        sys.exit("GEMINI_API_KEY is not set. Export it in ~/.zshenv or ~/.profile, which non-interactive shells read, and retry.")
+    kind = mimetypes.guess_type(args.out)[0]
+    if kind not in ("image/png", "image/jpeg"):
+        sys.exit("--out names a .png or .jpg file")
+    if os.path.exists(args.out) and not args.force:
+        sys.exit(f"{args.out} exists. --force generates a new one, and pays for it again.")
+    parts = [{"type": "image", "mime_type": mimetypes.guess_type(path)[0], "data": base64.b64encode(open(path, "rb").read()).decode()}
+             for path in args.ref]
+    # The API takes image/jpeg as the only mime_type it is asked for; left out, it answers in PNG.
+    body = {"model": args.model, "input": parts + [{"type": "text", "text": args.prompt}], "store": False,
+            "response_format": {"type": "image", "image_size": args.size, **({"mime_type": kind} if kind == "image/jpeg" else {})}}
+    if args.aspect:
+        body["response_format"]["aspect_ratio"] = args.aspect
+    if args.thinking:
+        body["generation_config"] = {"thinking_level": args.thinking}
+    request = urllib.request.Request(GEMINI, data=json.dumps(body).encode(),
+                                     headers={"x-goog-api-key": key, "Content-Type": "application/json"})
+    started = time.time()
+    try:
+        with urllib.request.urlopen(request, timeout=600) as response:
+            result = json.loads(response.read())
+    except urllib.error.HTTPError as error:
+        sys.exit(f"Gemini {args.model}: HTTP {error.code}\n{error.read().decode(errors='replace')[:2000]}")
+    blocks = [block for step in result.get("steps", []) if step.get("type") == "model_output" for block in step.get("content", [])]
+    images = [block for block in blocks if block.get("type") == "image"]
+    said = " ".join(block["text"] for block in blocks if block.get("type") == "text").strip()
+    if not images:
+        sys.exit(f"Gemini {args.model} returned no image. {said}")
+    os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
+    with open(args.out, "wb") as handle:
+        handle.write(base64.b64decode(images[-1]["data"]))
+    with open(os.path.splitext(args.out)[0] + ".json", "w") as handle:
+        json.dump({"model": args.model, "prompt": args.prompt, "ref": args.ref, "aspect": args.aspect, "size": args.size}, handle, indent=1)
+    size = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=width,height", "-of", "csv=p=0:s=x", args.out],
+                          capture_output=True, text=True).stdout.strip()
+    print(f"{args.out}: {size} from {args.model} in {time.time() - started:.0f} s" + (f"\n  {said}" if said else ""))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -163,6 +212,16 @@ def main():
     p.add_argument("mp4")
     p.add_argument("--out", required=True)
     p.set_defaults(run=frames)
+    p = commands.add_parser("image")
+    p.add_argument("--prompt", required=True)
+    p.add_argument("--ref", action="append", default=[], help="an image to edit or draw from; repeat for more")
+    p.add_argument("--aspect", help="1:1, 4:5, 9:16, 16:9, 21:9 ...; the model picks when left out")
+    p.add_argument("--size", default="2K", choices=["1K", "2K", "4K"])
+    p.add_argument("--thinking", choices=["minimal", "medium", "high"])
+    p.add_argument("--model", default="gemini-nano-banana-2.1")
+    p.add_argument("--out", required=True)
+    p.add_argument("--force", action="store_true")
+    p.set_defaults(run=image)
     args = parser.parse_args()
     args.run(args)
 
