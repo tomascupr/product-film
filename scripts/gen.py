@@ -165,8 +165,8 @@ def image(args):
         sys.exit(f"{args.out} exists. --force generates a new one, and pays for it again.")
     parts = [{"type": "image", "mime_type": mimetypes.guess_type(path)[0], "data": base64.b64encode(open(path, "rb").read()).decode()}
              for path in args.ref]
-    # The API takes image/jpeg as the only mime_type it is asked for; left out, it answers in PNG.
-    body = {"model": args.model, "input": parts + [{"type": "text", "text": args.prompt}], "store": False,
+    # The API takes image/jpeg as the only mime_type it is asked for, and answers in JPEG either way.
+    body ={"model": args.model, "input": parts + [{"type": "text", "text": args.prompt}], "store": False,
             "response_format": {"type": "image", "image_size": args.size, **({"mime_type": kind} if kind == "image/jpeg" else {})}}
     if args.aspect:
         body["response_format"]["aspect_ratio"] = args.aspect
@@ -186,8 +186,13 @@ def image(args):
     if not images:
         sys.exit(f"Gemini {args.model} returned no image. {said}")
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
+    data = base64.b64decode(images[-1]["data"])
+    if kind == "image/png" and not data.startswith(b"\x89PNG"):
+        # A .png that holds JPEG bytes fools whatever reads it by its name, so convert it.
+        data = subprocess.run(["ffmpeg", "-v", "error", "-i", "-", "-pix_fmt", "rgb24", "-f", "image2pipe", "-c:v", "png", "-"],
+                              input=data, capture_output=True, check=True).stdout
     with open(args.out, "wb") as handle:
-        handle.write(base64.b64decode(images[-1]["data"]))
+        handle.write(data)
     with open(os.path.splitext(args.out)[0] + ".json", "w") as handle:
         json.dump({"model": args.model, "prompt": args.prompt, "ref": args.ref, "aspect": args.aspect, "size": args.size}, handle, indent=1)
     size = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=width,height", "-of", "csv=p=0:s=x", args.out],

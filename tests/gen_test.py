@@ -51,6 +51,13 @@ except SystemExit as stop:
     assert "--force" in str(stop)
 assert len(sent) == 1
 
+# The API answers in JPEG whatever it is asked; a .png still has to be a PNG
+subprocess.run(["ffmpeg", "-v", "error", "-i", "still.png", "still.jpg"], check=True)
+reply = {"steps": [{"type": "model_output", "content": [{"type": "image", "mime_type": "image/jpeg",
+                                                         "data": base64.b64encode(open("still.jpg", "rb").read()).decode()}]}]}
+gen.image(args(out="img/converted.png"))
+assert open("img/converted.png", "rb").read().startswith(b"\x89PNG"), "JPEG bytes saved under a .png name"
+
 gen.image(args(out="img/night.jpg", ref=[], aspect=None, thinking="high"))
 body = sent[-1]
 assert body["response_format"] == {"type": "image", "image_size": "2K", "mime_type": "image/jpeg"}, body["response_format"]
