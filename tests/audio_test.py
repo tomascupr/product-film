@@ -1,4 +1,4 @@
-"""Where audio-edit.py puts segments and where mix.py puts hits named by cue or word. Offline, on synthetic WAVs.
+"""Where audio-edit.py puts segments, where mix.py puts hits named by cue or word, and verify.py's word check on a mix. Offline, on synthetic WAVs.
 
     uv run --with numpy --with imageio-ffmpeg python3 tests/audio_test.py
 """
@@ -51,6 +51,8 @@ def edit_places_segments(folder):
                                               {"fromBar": 3, "toBar": 4}]})
     result = run(folder, "audio-edit.py", "edit.json")
     assert result.returncode == 0, result.stderr
+    # the 0.3 s hush is 0.6 of a beat: reported, with the time that would put the drop back on the pulse
+    assert "0.60 of a beat" in result.stdout and "start at 3.500 s" in result.stdout, result.stdout
     film = read(f"{folder}/music.wav")
     for t, song in [(0.5, 1.75), (2.99, 4.24), (3.15, None), (3.31, 6.26), (5.2, 8.15), (5.31, 6.26), (7.2, 8.15)]:
         value = film[int(round(t * SR))]
@@ -59,6 +61,23 @@ def edit_places_segments(folder):
         else:
             assert abs(value / 0.5 * 20 - song) < 0.003, f"film {t} s plays song {value / 0.5 * 20:.3f} s, expected {song} s"
     assert abs(len(film) / SR - 7.3) < 1e-3, len(film) / SR
+
+
+def edit_keeps_the_pulse(folder):
+    write_wav(f"{folder}/song.wav", 0.5 * np.arange(20 * SR) / (20 * SR))
+    dump(f"{folder}/film.json", {"cues": {}})
+    edit = {"source": "song.wav", "out": "music.wav", "bpm": 119.997, "firstDownbeat": 0, "duration": 6}
+    # One bar at 119.997 BPM ends at 2.00005 s, a hair past the 2.0 s the next one is placed at: it follows, no error.
+    dump(f"{folder}/edit.json", {**edit, "segments": [{"fromBar": 0, "toBar": 1}, {"fromBar": 1, "toBar": 2, "at": 2.0}]})
+    result = run(folder, "audio-edit.py", "edit.json")
+    assert result.returncode == 0 and "film 2.000 to 4.000 s" in result.stdout, result.stdout + result.stderr
+    # A whole beat of silence keeps the pulse and is not reported; more than a frame of overlap is still an error.
+    dump(f"{folder}/edit.json", {**edit, "segments": [{"fromBar": 0, "toBar": 1}, {"fromBar": 1, "toBar": 2, "at": 2.5}]})
+    result = run(folder, "audio-edit.py", "edit.json")
+    assert result.returncode == 0 and "of a beat" not in result.stdout, result.stdout + result.stderr
+    dump(f"{folder}/edit.json", {**edit, "segments": [{"fromBar": 0, "toBar": 1}, {"fromBar": 1, "toBar": 2, "at": 1.9}]})
+    result = run(folder, "audio-edit.py", "edit.json")
+    assert result.returncode != 0 and "overlaps" in result.stderr, result.stdout + result.stderr
 
 
 def mix_places_hits(folder):
@@ -111,8 +130,25 @@ def mix_lines_up_stems(folder):
         assert abs(found - t) <= 1 / SR, f"stem click meant for {t} s lands at {found:.5f} s"
 
 
+def verify_checks_a_mix_for_words(folder):
+    # verify.py pointed at the mix itself runs the word check alone; the transcript is stubbed, so nothing is sent.
+    sys.path.insert(0, SCRIPTS)
+    import eleven
+    import verify
+    dump(f"{folder}/film.json", {"voice": {"lines": [{"id": "v1", "text": "[sighs] Everyone knows a piece."}]}})
+    write_wav(f"{folder}/mix.wav", np.zeros(SR))
+    for heard, code in [("Everyone knows a piece.", 0), ("Everyone knows it.", 1)]:
+        eleven.listen = lambda path, quiet=False, heard=heard: [{"text": w} for w in heard.split()]
+        sys.argv = ["verify.py", f"{folder}/mix.wav", "--script", f"{folder}/film.json"]
+        try:
+            verify.main()
+            raise AssertionError("verify.py did not exit")
+        except SystemExit as stop:
+            assert stop.code == code, (heard, stop.code)
+
+
 if __name__ == "__main__":
-    for check in (edit_places_segments, mix_places_hits, mix_lines_up_stems):
+    for check in (edit_places_segments, edit_keeps_the_pulse, mix_places_hits, mix_lines_up_stems, verify_checks_a_mix_for_words):
         with tempfile.TemporaryDirectory() as folder:
             check(folder)
         print(f"ok {check.__name__}")

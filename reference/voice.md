@@ -38,7 +38,7 @@ python3 $SKILL/scripts/eleven.py tts --only v3 --force   # redo one take
   - **A stumble or a flat read:** retake it (`--only v2 --force`), or add a tag.
   - **A read no retake gets right:** record the line's exact words the way you want them (alignment times the script's words even where a take says another) and run `eleven.py sts v2 takes/v2.m4a`. It comes back in the line's voice with your timing. To keep your own voice, run `eleven.py align v2 takes/v2.m4a`. Both time the words the way `tts` does and mark the take with a `source`. `tts` keeps that take unless `--force`, and says so when the line's text has changed since.
 - More than one speaker: a line's own `voice_id` (and `settings`) overrides `voice.voice_id`. Neighbouring-line context is only passed between lines of the same speaker, so each voice keeps its own intonation.
-- A word the final mix buries (`verify.py --script` lists it): lift that line with `gain_db` (2 to 4 dB) before ducking the music harder, and re-check.
+- A word the mix buries (`verify.py audio/mix.wav --script film.json` lists it, before any render): lift that line with `gain_db` (2 to 4 dB) or pull down the effect that sits on it, before ducking the music harder, and re-check.
 - Treated voices: a line's `filter` is an ffmpeg audio filter chain `mix.py` applies to that clip, e.g. a PA or phone voice: `"filter": "highpass=f=400,lowpass=f=3200,aecho=0.8:0.6:40:0.25"`.
 - Voice feel: `film.json` `voice.settings` (`stability`, `similarity_boost`) and `voice.seed` pass straight through.
 
@@ -48,7 +48,7 @@ python3 $SKILL/scripts/eleven.py tts --only v3 --force   # redo one take
 - In `render`, a moment that belongs to a word reads `wordAt(film, 'v2', 'reconciled')`. `wordAt` fails if the word disappears from the script, so an edit cannot silently break sync.
 - The picture leads the word slightly: a visual that illustrates a word lands 0.1 to 0.2 s before or on the word, never after it.
 - Words on screen never compete with the voice. Either punchlines repeat the key phrase at the moment it is said, or the screen carries UI only. There are no captions saying something different from the voice.
-- Captions for muted autoplay are a separate deliverable: the voice words with their timings are already in `audio/vo/*.json`.
+- Where the film autoplays muted (a feed, a landing page), the point of each spoken line is on screen while it is said: a punchline, the UI showing the same thing, or a caption in the film's own type built from the word timings in `audio/vo/*.json`. Dialogue needs the caption, because a viewer with the sound off sees people and no words. `film.mjs stills <dir> --cues` takes a still in the middle and at the last word of every line, to look at exactly that.
 
 ## 5. With music
 

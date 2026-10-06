@@ -44,7 +44,7 @@ def call(method, path, body=None, raw=False, file=None, field="file"):
     """A JSON request, or with `file` a multipart form of `body`'s fields plus that file."""
     key = os.environ.get("ELEVENLABS_API_KEY")
     if not key:
-        sys.exit("ELEVENLABS_API_KEY is not set. Export it in your shell (e.g. ~/.zshrc) and retry.")
+        sys.exit("ELEVENLABS_API_KEY is not set. Export it in ~/.zshenv or ~/.profile, which non-interactive shells read, and retry.")
     headers = {"xi-api-key": key, "content-type": "application/json"}
     data = json.dumps(body).encode() if body is not None else None
     if file:
@@ -58,7 +58,9 @@ def call(method, path, body=None, raw=False, file=None, field="file"):
         with urllib.request.urlopen(request, timeout=600) as response:
             data = response.read()
     except urllib.error.HTTPError as error:
-        sys.exit(f"ElevenLabs {method} {path}: HTTP {error.code}\n{error.read().decode(errors='replace')[:2000]}")
+        reply = error.read().decode(errors="replace")[:2000]
+        hint = "\nThe key lacks that permission. Name it to the user, who can enable it on the key; the script is not at fault." if "missing the permission" in reply else ""
+        sys.exit(f"ElevenLabs {method} {path}: HTTP {error.code}\n{reply}{hint}")
     return data if raw else json.loads(data)
 
 

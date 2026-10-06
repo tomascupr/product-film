@@ -3,6 +3,7 @@
     uv run --with numpy --with imageio-ffmpeg python3 verify.py out/<name> --duration 30 \
         [--bg 10,10,10] [--bg-at 0] [--loop] [--lufs -14] [--probe 9.4:944,800] [--probe 33.0:1000,860]
         [--script film.json] [--allow-gap 12.6]
+    python3 verify.py audio/mix.wav --script film.json      (the word check alone, on the mix, before any render)
 
 For every .mp4 and .webm in the folder (point it at out/<name>, not out/):
 - duration matches (to the frame)
@@ -19,7 +20,8 @@ For every .mp4 and .webm in the folder (point it at out/<name>, not out/):
 - --script film.json: transcribes the first file with audio (ElevenLabs speech to text, needs
   ELEVENLABS_API_KEY) and lists every script word the transcript lost: a word the music buried.
   Numbers are skipped, since "five point five" comes back as "5.5", and so are [audio tags]. A word
-  with a voice.pronounce alias counts as heard when its alias is.
+  with a voice.pronounce alias counts as heard when its alias is. Point the script at audio/mix.wav in
+  place of a folder to run this check alone: a buried word found there costs a mix, not a render.
 Exits non-zero when a check fails.
 """
 
@@ -95,10 +97,16 @@ def lost_words(path, film_json):
     return [w for w in words(" ".join(l["text"] for l in voice.get("lines", []))) if w not in heard]
 
 
+def voice_survives(path, film_json):
+    lost = lost_words(path, film_json)
+    print(f"voice in {os.path.basename(path)}: " + ("every script word heard" if not lost else "LOST " + " ".join(lost)))
+    return not lost
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("folder")
-    parser.add_argument("--duration", type=float, required=True)
+    parser.add_argument("--duration", type=float)
     parser.add_argument("--fps", type=int, default=60)
     parser.add_argument("--bg", help="r,g,b expected at the center of frame 0")
     parser.add_argument("--loop", action="store_true")
@@ -108,6 +116,12 @@ def main():
     parser.add_argument("--script", help="film.json: check the voice survives the mix")
     parser.add_argument("--allow-gap", type=float, action="append", default=[])
     args = parser.parse_args()
+    if os.path.isfile(args.folder):
+        if not args.script:
+            parser.error("a mix is checked for its words: pass --script film.json")
+        sys.exit(0 if voice_survives(args.folder, args.script) else 1)
+    if args.duration is None:
+        parser.error("--duration is required for a folder of renders")
 
     last = round(args.duration * args.fps) - 1
     failed = False
@@ -158,9 +172,7 @@ def main():
     if args.script:
         voiced = [f for f in files if info(f)[4]]
         if voiced:
-            lost = lost_words(voiced[0], args.script)
-            print(f"voice in {os.path.basename(voiced[0])}: " + ("every script word heard" if not lost else "LOST " + " ".join(lost)))
-            failed |= bool(lost)
+            failed |= not voice_survives(voiced[0], args.script)
     if not files:
         print("no .mp4 or .webm files found")
         failed = True
