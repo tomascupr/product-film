@@ -1,6 +1,7 @@
 <context>
 <Product> <does what, for whom, in one or two sentences>.
 This film plays <where, from the interview>. It must read <with the sound off, if it plays muted>.
+After one watch a viewer can say: "<the sentence from the interview, in a viewer's words>".
 Read `../BRAND.md` first. It holds the look, the brand element, the components, the product owner's rulings, the voice and what we may claim. This prompt only adds the story.
 </context>
 
@@ -33,12 +34,12 @@ v2 (at ~4.5 s): "<line>"   lands: "<word>" -> <...>
 
 <beat-sheet>
 Energy: <the curve you chose, and where the peak is>.
-| Time | Bar or word | On screen | Camera | Heard |
-|---|---|---|---|---|
-| 0.0 | frame 0 (the cover) | <a still that names the subject> | <...> | |
-| | | <...> | <...> | <...> |
+| Time | Bar or word | On screen | Camera | Heard | A viewer understands |
+|---|---|---|---|---|---|
+| 0.0 | frame 0 (the cover) | <a still that names the subject> | <...> | | <what the still alone says> |
+| | | <...> | <...> | <...> | <one plain sentence; from the picture alone where the film plays muted> |
 </beat-sheet>
 
 <start>
-Before any scene code, show the chosen idea, the beat sheet (and the voice script, read aloud once for fit), style frames of the opening and one key scene, and a motion test of the peak. Wait for OK, unless this is a run without stops (SKILL.md).
+Before any scene code, show the chosen idea, the beat sheet with what a viewer understands from each scene (and the voice script, read aloud once for fit), style frames of the opening and one key scene, and a motion test of the peak. Wait for OK, unless this is a run without stops (SKILL.md).
 </start>

@@ -57,7 +57,7 @@ def main():
     else:
         key = os.environ.get("BRANDFETCH_API_KEY")
         if not key:
-            sys.exit("BRANDFETCH_API_KEY is not set. Get a free key at brandfetch.com/developers.")
+            sys.exit("BRANDFETCH_API_KEY is not set. Get a free key at brandfetch.com/developers and export it in ~/.zshenv or ~/.profile, which non-interactive shells read.")
         status, body = get(API + args.domain, key)
         if status == 204:
             sys.exit(f"{args.domain}: Brandfetch has not indexed this brand yet (204). Use the partner's press kit.")

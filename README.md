@@ -7,13 +7,13 @@ Every frame is a pure function of time, rendered by headless Chrome (or Remotion
 ## What it does
 
 1. Reads the product's code and site for its colors, type, components, logo and copy rules.
-2. Interviews you for the film type, the brief, the sound and the engine.
-3. Pitches ideas, then writes a beat sheet with an energy curve, a camera plan and a planned first frame (the cover most players show), and checks the peak in a short motion test before building everything.
+2. Interviews you for the film type, the brief, the sound and the engine, and for the sentence a viewer should be able to say after one watch.
+3. Pitches ideas, then writes a beat sheet with an energy curve, a camera plan, a planned first frame (the cover most players show) and what a viewer understands from each scene, and checks the peak in a short motion test before building everything.
 4. Generates the voice with word timings (one voice or several, directed with audio tags and a pronunciation dictionary, or your own read turned into the voice), music and sound design with ElevenLabs, or uses your own. It measures the beat with a beat-tracking model and cuts the music on bars onto the film's cues. Partners appear in their official identity via Brandfetch.
 5. Choreographs with GSAP (letter reveals, drawn lines, flights along a path) and plays Lottie animation, generated footage (fal.ai) and Blender renders, all driven frame by frame so every render is identical.
 6. Builds the scenes keyed to words and beats. Camera holds are fitted to the text being read and kept on the content, so lines are never cropped and the frame never drifts into empty space.
-7. Reviews drafts by measurement and by fresh eyes: `energy.py` finds dead stretches and loud hits that land on still frames, `film.mjs check` finds text that is too small at phone size, covered, overlapping or cropped by the camera, and `critic.py` packs the draft for a reviewer that never saw the build, who scores the cover, energy, peak, composition, readability and originality. `watch.py` has Gemini watch and hear the film itself, for what a silent pack can't show: a buried word, a hit off its picture.
-8. Renders the final with motion blur, saves the first frame at thumbnail size with its text checked, and verifies duration, color tags, loudness, a first frame that is not blank, audio gaps and that every script word survives the mix.
+7. Reviews drafts by measurement and by fresh eyes: `energy.py` finds dead stretches and loud hits that land on still frames, `film.mjs check` finds text that is too small at phone size, covered, overlapping or cropped by the camera, and frames that change with the order they are drawn in, and `critic.py` packs the draft for a reviewer that never saw the build, who says back what the film told them and scores the cover, clarity, energy, peak, composition, readability and originality. `watch.py` has Gemini watch and hear the film itself, for what a silent pack can't show: a buried word, a hit off its picture. The first full draft goes to you after one round of fixes.
+8. Renders the final with motion blur, in fresh-browser segments when the film is long, saves the first frame at thumbnail size with its text checked, and verifies duration, color tags, loudness, a first frame that is not blank, audio gaps and that every script word survives the mix.
 
 ## Requirements
 
@@ -39,12 +39,23 @@ Start a new film at high reasoning effort (`/effort xhigh` in Claude Code, or `m
 | Path | What it holds |
 |---|---|
 | `SKILL.md` | Principles, workflow, quality floor, traps |
-| `reference/` | One file per step: discovery, interview, story (film types), ingredients, voice, music, engines, review, the critic's prompt, render |
+| `reference/` | One file per step: discovery, interview, story (film types), ingredients, voice, music, engines, review, the critic's prompt, render. `field-notes.md` holds dated prices, timings and thresholds |
 | `templates/html/` | The HTML engine: `index.html`, `kit.js` (time, springs, camera moves, `fit` and `inside` for text holds, shake, beat kicks, color mixing), `film.mjs` (serve, stills, measure, check, render with a cover preview) |
 | `templates/remotion/` | The Remotion engine's config and kit twins |
 | `templates/BRAND.md`, `templates/film-prompt.md` | The product kit and the per-film brief |
+| `templates/3d/shot.py` | A starting Blender scene for a 3D shot |
 | `scripts/` | `eleven.py`, `brandfetch.py`, `beats.py`, `audio-edit.py`, `mix.py`, `energy.py`, `critic.py`, `watch.py`, `gen.py`, `verify.py`. `beats.py` runs a beat-tracking model through uv; its first run downloads torch and the model (about 200 MB) |
-| `tests/` | `node --test tests/` for the kit's camera and color maths; `tests/thirdparty/run.sh` proves GSAP and Lottie render frame-exact, and `tests/footage/run.sh` the same for image sequences; `python3 tests/eleven_test.py` and `uv run --with numpy --with imageio-ffmpeg python3 tests/audio_test.py` check word timings, takes, and where hits and music segments land; `tests/check/` is a fixture for `film.mjs check` |
+| `tests/` | `node --test tests/` for the kit's camera and color maths; `tests/thirdparty/run.sh` proves GSAP and Lottie render frame-exact and a render in segments equal to one in a single browser, `tests/footage/run.sh` does the same for image sequences, and `tests/check/run.sh` covers `film.mjs check` and `stills --cues`; `python3 tests/eleven_test.py` checks word timings and takes; under `uv run --with numpy --with imageio-ffmpeg python3`, `tests/audio_test.py` checks where hits and music segments land and the word check on a mix, and `tests/review_test.py` the critic's pack and the watcher's prompt |
+
+## Changing the skill
+
+A lesson from a film goes where it will be used:
+- What a script can check or do becomes a tool or a warning in one, with a test in `tests/` that runs offline on synthetic input. `film.mjs check --cold` started as frames that changed with render order.
+- A judgment the model has to make becomes one line in the reference for that step, with its reason.
+- A number that will age (a price, a timing, a threshold) goes in `reference/field-notes.md` under its date.
+- A product's own rulings go in that product's `BRAND.md`, not here.
+
+`SKILL.md` holds the principles and the workflow and is read in full for every film. An incident told there as a story costs every later film its attention, so the story stays in the commit message.
 
 ## Credits
 

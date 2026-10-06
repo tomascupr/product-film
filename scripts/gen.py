@@ -56,7 +56,7 @@ def value(text):
 def fal(url, body=None):
     key = os.environ.get("FAL_KEY")
     if not key:
-        sys.exit("FAL_KEY is not set. Export it in your shell (e.g. ~/.zshenv) and retry.")
+        sys.exit("FAL_KEY is not set. Export it in ~/.zshenv or ~/.profile, which non-interactive shells read, and retry.")
     request = urllib.request.Request(url, data=None if body is None else json.dumps(body).encode(),
                                      headers={"Authorization": f"Key {key}", "Content-Type": "application/json"})
     with urllib.request.urlopen(request, timeout=120) as response:

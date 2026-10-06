@@ -9,7 +9,8 @@ The user decides what the film shows, how it sounds, and how it is built. Ask af
 | What kind of film? | The 3 or 4 types from story.md "Film types" that fit what you found |
 | Where will the film play? | Landing page, muted loop / Social, with sound / Launch or demo video, with sound / Event screen |
 | How long? | Ranges that suit the type and the placement |
-| What must it show? (multi) | The 3 or 4 strongest features, screens or moments you found, by their product names (for a teaser with no UI: the statement it makes) |
+| What should a viewer be able to say after one watch? | Two or three candidate sentences in a viewer's own words, written from what you found ("it matches every invoice to its order and flags the ones that don't add up"). The film is built to leave that sentence, and the reviewers are asked to say it back. |
+| What must it show, and what stays out? (multi) | The 3 or 4 strongest features, screens or moments you found, by their product names (for a teaser with no UI: the statement it makes). Ask what to leave out too: a feature the film only half explains costs more than one it skips. |
 | How should it be built? **(the engine gate)** | HTML `render(t)` (Recommended): one file, no license, UI redrawn faithfully / Remotion: imports the product's real React components, needs a Remotion company license above a small team size |
 
 - Ask the engine question only when the product's UI is React. Otherwise use HTML and say so in one line. Recommend Remotion only when reusing real components clearly beats redrawing them (many complex screens, a design system that changes often, a team that will keep editing films), and name the license cost.
