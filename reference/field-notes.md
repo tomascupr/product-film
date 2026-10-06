@@ -27,3 +27,10 @@ Prices, timings and thresholds measured on real films, each under its date. They
 
 - On that film, with camera zooms over text, 96 comparisons of a frame drawn cold against the same frame drawn after others found at worst 0.03% of the pixels more than 4 levels apart and none more than 24. Its two marks (0.5% past 4 levels, 0.02% past 24) sit above that.
 - Two bugs the film had once, put back on purpose, moved 0.05% to 7.6% of the frame by more than 24 levels: a height read from an element the frame before had hidden, and an overlay that one scene revealed and only that scene hid.
+
+## Frame capture (HTML engine, October 2026, 16-core M4 Max; tried, not adopted)
+
+- On a 59.6 s film at 1920x1080 and 60 fps, drawing a frame took 2 to 3 ms and Playwright's PNG screenshot 112 ms, so the screenshot sets a render's pace. The plain draft took 246 s; four pages in one browser captured 11 frames/s.
+- Chrome's `Page.captureScreenshot` with `optimizeForSpeed`, sent on a CDP session of film.mjs's own with a browser per worker, captured 81 frames/s: the draft in 36 to 44 s, 2 s with 16 subframes in 19 to 27 s against 235 s, the whole blurred film in 408 s against about two hours. Frames drawn cold matched Playwright's exactly.
+- It was not adopted. In a third of test renders, a browser among several captured a whole part at its window's 16:10 shape: without a clip the frame came back the wrong size and ffmpeg dropped frames silently on the size change; with a clip the content was wrong (29 dB). Setting the viewport again on that session fixed it but changed how text was rasterized (33 dB from Playwright's frames), so a final no longer matched its stills. Playwright's own screenshot in separate browsers was clean every time but no faster. A next try: send the fast capture through the session Playwright emulates the viewport on.
+- Two renders of a film with canvas blur and scaled text can differ by up to 40 dB in some frames while frames drawn cold match. Compare renders by PSNR, not by checksum.
