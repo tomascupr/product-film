@@ -20,8 +20,9 @@
 // ffmpeg. --blur renders N subframes per frame (4 by default) and averages them: motion blur, N times slower.
 // Colors: screenshots are sRGB; ffmpeg converts once to BT.709 limited range and tags it,
 // so dark backgrounds do not come back lifted. Muxes audio/mix.wav when it exists.
-// --segments renders s seconds of film per browser (10 when bare) and joins the pieces: a long blurred
-// render can stall in one browser. A finished render replaces the one before it; a failed one leaves it alone.
+// --segments renders s seconds of film at a time in fresh browsers (10 when bare) and joins the pieces: a
+// long blurred render can stall in a browser that runs too long. A finished render replaces the one before
+// it; a failed one leaves it alone.
 import { chromium } from 'playwright-core'
 import { spawn } from 'node:child_process'
 import { createServer } from 'node:http'
@@ -175,7 +176,7 @@ async function inspect(page, view, min) {
   }, { W, H, k: view / W, min })
 }
 
-const launch = () => chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : { channel: 'chrome' })
+const launch = (args = []) => chromium.launch({ ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : { channel: 'chrome' }), args })
 
 if (cmd === 'serve') {
   const server = await serve(+(flags.port ?? 4173))
@@ -275,12 +276,38 @@ if (cmd === 'serve') {
       const blur = sub > 1 ? `tmix=frames=${sub},select='not(mod(n+1\\,${sub}))',setpts=N/(${FPS}*TB),` : ''
       const wait = () => new Promise(r => setTimeout(r, 5))
       const started = Date.now()
-      // Frames a to b of the film into a video-only file, in a browser of their own.
+      // Chrome's fast PNG: the same pixels as page.screenshot, about four times quicker at 1080p. It comes
+      // through a CDP session of our own, which a browser among several sometimes served at its window's shape
+      // rather than the viewport. A clip hides that as wrong pixels; unclipped it shows as a wrong size, which
+      // fails the part (ffmpeg would drop frames without a word) and is probed for before a browser renders.
+      // Unclipped it also ignores --scale, so a scaled draft keeps Playwright's screenshot.
+      const fast = scale === 1
+      const shot = async ({ page, cdp }, i) => {
+        if (!fast) return page.screenshot({ type: 'png' })
+        const png = Buffer.from((await cdp.send('Page.captureScreenshot', { format: 'png', optimizeForSpeed: true })).data, 'base64')
+        const got = [png.readUInt32BE(16), png.readUInt32BE(20)]
+        if (got[0] !== W || got[1] !== H) throw new Error(`frame ${i} came back ${got.join('x')}, not ${W}x${H}`)
+        return png
+      }
+      // Frames a to b of the film into a video-only file, each worker in a browser of its own:
+      // pages in one browser share its compositor, and four of them barely beat one.
       const part = async (out, a, b) => {
-        const own = await launch()
+        const own = []
         try {
-          // Open the pages first: a page error then stops the run before ffmpeg starts.
-          const pages = await Promise.all(Array.from({ length: workers }, () => open(own, url, scale)))
+          // Open the pages first: a page error then stops the run before ffmpeg starts. A browser whose first
+          // capture comes back the wrong size is swapped for a new one, up to three times.
+          // allSettled: every browser is in `own` before a failure reaches `finally`, so none is left running.
+          const opened = await Promise.allSettled(Array.from({ length: workers }, async () => {
+            for (let tries = 0; ; tries++) {
+              const browser = await launch(); own.push(browser)
+              const page = await open(browser, url, scale), cdp = await page.context().newCDPSession(page), worker = { page, cdp }
+              try { if (fast) await shot(worker, 'probe'); return worker } catch (e) { if (tries === 2) throw e; console.log(`${e.message}; a new browser`) }
+              await browser.close(); own.splice(own.indexOf(browser), 1)
+            }
+          }))
+          const stuck = opened.find(o => o.status === 'rejected')
+          if (stuck) throw stuck.reason
+          const pages = opened.map(o => o.value)
           const enc = ffmpeg([
             '-f', 'image2pipe', '-framerate', String(FPS * sub), '-i', '-',
             // setparams tags primaries and transfer too; output flags alone leave them 'unknown'.
@@ -292,11 +319,11 @@ if (cmd === 'serve') {
           // ponytail: frames buffer in memory up to AHEAD per worker; lower it if RAM is tight at 4K.
           const AHEAD = 24, done = new Map(), n1 = b * sub
           let next = a * sub, failed = false
-          try { await Promise.all(pages.map(async (page, k) => {
+          try { await Promise.all(pages.map(async (worker, k) => {
             for (let i = a * sub + k; i < n1 && !failed; i += workers) {
               while (i - next > AHEAD * workers && !failed) await wait()
-              await draw(page, i / (FPS * sub))
-              done.set(i, await page.screenshot({ type: 'png' }))
+              await draw(worker.page, i / (FPS * sub))
+              done.set(i, await shot(worker, i))
               while (done.has(next)) {
                 const buf = done.get(next); done.delete(next); next++
                 // Wait for ffmpeg to take it, or to die: its exit is then the error, not a drain that never comes.
@@ -306,7 +333,7 @@ if (cmd === 'serve') {
             }
           })) } catch (e) { failed = true; enc.kill(); throw e }
           enc.stdin.end(); await enc.done
-        } finally { await own.close() }
+        } finally { await Promise.all(own.map(browser => browser.close())) }
       }
       try {
         for (const [k, [a, b]] of bounds.entries()) {

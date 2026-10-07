@@ -9,7 +9,7 @@ node film.mjs render <name> --blur --poster <headline seconds> [--webm] [--segme
 ```
 
 The output goes to `out/<name>/`: `<name>.mp4` with `audio/mix.wav`, `<name>-muted.mp4`, and optionally `<name>.webm` and `<name>-poster.jpg`.
-- A long blurred render can stall in one browser: a screenshot times out after tens of thousands of them. `--segments` renders the film in 10 s parts, each in a browser of its own, renders a failed part once more and joins them, so use it when subframes times seconds gets large (field-notes.md has the measured case).
+- A long blurred render can stall in one browser: a screenshot times out after tens of thousands of them. `--segments` renders the film in 10 s parts, each in fresh browsers, renders a failed part once more and joins them, so use it when subframes times seconds gets large (field-notes.md has the measured case).
 - Read the render's last line. A failed render ends on `FAILED:`, exits non-zero and leaves the render before it in place, so the old file is still there to be mistaken for the new one.
 
 **Remotion engine** (engine-remotion.md):
